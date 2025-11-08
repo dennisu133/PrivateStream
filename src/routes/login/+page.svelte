@@ -26,109 +26,66 @@
   </div>
 </main>
 
-<style>
+<style lang="postcss">
+  @reference "tailwindcss";
+
   main {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    width: 100vw;
-    color: #fff;
-    font-family: sans-serif;
+    @apply flex justify-center items-center h-screen w-screen;
   }
 
   .login-card {
-    position: relative;
-    width: 100%;
-    max-width: 360px;
-    padding: 2px; /* gradient border thickness */
-    border-radius: 14px;
-    background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.18),
-      rgba(255, 255, 255, 0.06)
-    );
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+    @apply relative 
+    w-full 
+    max-w-sm 
+    p-0.5 
+    rounded-xl
+    bg-linear-to-br from-zinc-800 to-zinc-700;
   }
 
   .login-inner {
-    background: rgba(16, 16, 24, 0.72);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-radius: 12px;
-    padding: 28px 24px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    @apply bg-black/70 
+    backdrop-blur-md 
+    rounded-lg 
+    px-6 py-7;
   }
 
   .stack {
-    display: grid;
-    gap: 12px;
+    @apply grid gap-3;
   }
 
   form {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    @apply flex flex-col gap-3;
   }
 
   input {
-    padding: 0.85rem 0.9rem;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background-color: rgba(255, 255, 255, 0.06);
-    color: #e6e6e6;
-    font-size: 1rem;
-    text-align: left;
-    outline: none;
-    transition:
-      border-color 0.2s ease,
-      box-shadow 0.2s ease,
-      background-color 0.2s ease;
-  }
-
-  input::placeholder {
-    color: rgba(230, 230, 230, 0.6);
-  }
-
-  input:focus {
-    background-color: rgba(255, 255, 255, 0.08);
-    border-color: rgba(122, 162, 255, 0.65);
-    box-shadow: 0 0 0 4px rgba(122, 162, 255, 0.15);
+    @apply py-3.5 px-3.5 
+    rounded-lg 
+    border 
+    border-white/12 
+    bg-white/10 
+    text-base
+    outline-hidden 
+    transition duration-200 ease-in-out
+    focus:border-blue-500/65;
   }
 
   button {
-    padding: 0.85rem 0.9rem;
-    border: none;
-    border-radius: 10px;
-    background-image: linear-gradient(135deg, #4f46e5, #06b6d4);
-    color: #fff;
-    font-size: 1rem;
-    cursor: pointer;
-    transition:
-      transform 0.15s ease,
-      box-shadow 0.15s ease,
-      filter 0.15s ease;
-    box-shadow: 0 8px 24px rgba(79, 70, 229, 0.25);
-  }
-
-  button:hover {
-    filter: brightness(1.05);
-    transform: translateY(-1px);
-    box-shadow: 0 12px 28px rgba(79, 70, 229, 0.35);
-  }
-
-  button:active {
-    transform: translateY(0);
-    box-shadow: 0 8px 24px rgba(79, 70, 229, 0.25);
+    @apply py-3.5 px-3.5 
+    rounded-lg 
+    text-base 
+    cursor-pointer 
+    transition duration-150 ease-in-out 
+    shadow-sm shadow-black/30
+    bg-linear-to-r from-blue-500 to-cyan-500
+    hover:from-blue-700 hover:to-cyan-600 hover:shadow-lg;
   }
 
   .error {
-    margin: 0;
-    color: #ff6b6b;
-    font-size: 0.95rem;
-    background: rgba(255, 107, 107, 0.08);
-    border: 1px solid rgba(255, 107, 107, 0.25);
-    padding: 8px 10px;
-    border-radius: 8px;
+    @apply m-0 
+    text-red-400 text-[0.95rem] 
+    bg-red-500/10 border 
+    border-red-500/25 
+    px-2.5 py-2 
+    rounded-md;
   }
 </style>

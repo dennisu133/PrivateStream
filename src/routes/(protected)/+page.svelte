@@ -14,14 +14,14 @@
 
 <Catchip />
 
-<style>
+<style lang="postcss">
+  @reference "tailwindcss";
+
   main {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    width: 100vw;
-    box-sizing: border-box;
-    padding: 1rem;
+    @apply flex 
+    justify-center 
+    items-center 
+    h-screen 
+    w-screen;
   }
 </style>

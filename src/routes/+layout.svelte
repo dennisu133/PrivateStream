@@ -1,4 +1,5 @@
 <script lang="ts">
+  import "../app.css";
   import favicon from "$lib/assets/favicon.ico";
 
   let { children } = $props();
@@ -10,20 +11,10 @@
 
 {@render children?.()}
 
-<style>
+<style lang="postcss">
+  @reference "tailwindcss";
+
   :global(body) {
-    background-color: #000; /* Fallback for older browsers */
-    background-image: linear-gradient(
-      135deg,
-      #101018 0%,
-      #0d0d12 50%,
-      #000000 100%
-    );
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    color: #e0e0e0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-      Helvetica, Arial, sans-serif;
-    margin: 0;
+    @apply bg-black bg-[linear-gradient(135deg,#101018_0%,#0d0d12_50%,#000000_100%)] bg-fixed bg-no-repeat text-[#e0e0e0] font-sans m-0;
   }
 </style>
