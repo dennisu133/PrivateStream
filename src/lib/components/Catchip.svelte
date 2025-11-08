@@ -29,31 +29,29 @@
   </button>
 {/if}
 
-<style>
-  .gif-button {
-    background: none;
-    border: none;
-    padding: 0;
-    margin: 0;
-    display: block;
-    line-height: 0; /* Prevents extra space under the image */
+<style lang="postcss">
+  @reference "tailwindcss";
 
-    /* Positioning */
-    position: fixed;
-    bottom: 15px;
-    right: 15px;
-    z-index: 1; /* Ensure gif is below the player */
-    cursor: pointer;
+  .gif-button {
+    @apply bg-transparent 
+    border-0 
+    p-0 m-0 
+    block 
+    leading-0
+    fixed 
+    bottom-[15px] right-[15px] 
+    z-1 
+    cursor-pointer;
   }
 
   .corner-gif {
-    width: 120px;
-    height: auto;
-    opacity: 0.8;
-    transition: transform 0.2s ease;
+    @apply w-[120px] 
+    h-auto 
+    opacity-80 
+    transition-transform duration-200 ease-in-out;
   }
 
   .gif-button:hover .corner-gif {
-    transform: scale(1.1);
+    @apply scale-110;
   }
 </style>

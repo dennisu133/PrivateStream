@@ -5,6 +5,14 @@
   import Catstare from "./Catstare.svelte";
   import { whep } from "$lib/actions/whep";
   import type { ResizeEvent } from "@interactjs/types";
+  import {
+    Volume,
+    Volume2,
+    Volume1,
+    VolumeX,
+    Maximize,
+    Minimize,
+  } from "@lucide/svelte";
 
   let {
     videoEl = $bindable<HTMLVideoElement | null>(),
@@ -330,81 +338,13 @@
       aria-pressed={isMuted}
     >
       {#if isMuted}
-        <!-- https://lucide.dev/icons/volume-off -->
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="lucide lucide-volume-off-icon lucide-volume-off"
-          aria-hidden="true"
-          ><path d="M16 9a5 5 0 0 1 .95 2.293" /><path
-            d="M19.364 5.636a9 9 0 0 1 1.889 9.96"
-          /><path d="m2 2 20 20" /><path
-            d="m7 7-.587.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298V11"
-          /><path d="M9.828 4.172A.686.686 0 0 1 11 4.657v.686" /></svg
-        >
+        <VolumeX size={24} strokeWidth={2} aria-hidden="true" />
       {:else if volume < 0.33}
-        <!-- https://lucide.dev/icons/volume -->
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="lucide lucide-volume-icon lucide-volume"
-          aria-hidden="true"
-          ><path
-            d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"
-          /></svg
-        >
+        <Volume size={24} strokeWidth={2} aria-hidden="true" />
       {:else if volume < 0.66}
-        <!-- https://lucide.dev/icons/volume-1 -->
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="lucide lucide-volume1-icon lucide-volume-1"
-          aria-hidden="true"
-          ><path
-            d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"
-          /><path d="M16 9a5 5 0 0 1 0 6" /></svg
-        >
+        <Volume1 size={24} strokeWidth={2} aria-hidden="true" />
       {:else}
-        <!-- https://lucide.dev/icons/volume-2 -->
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="lucide lucide-volume2-icon lucide-volume-2"
-          aria-hidden="true"
-          ><path
-            d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"
-          /><path d="M16 9a5 5 0 0 1 0 6" /><path
-            d="M19.364 18.364a9 9 0 0 0 0-12.728"
-          /></svg
-        >
+        <Volume2 size={24} strokeWidth={2} aria-hidden="true" />
       {/if}
     </button>
 
@@ -427,125 +367,76 @@
       onclick={toggleFullscreen}
     >
       {#if !isFullscreen}
-        <!-- https://lucide.dev/icons/maximize -->
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="lucide lucide-maximize-icon lucide-maximize"
-          aria-hidden="true"
-          ><path d="M8 3H5a2 2 0 0 0-2 2v3" /><path
-            d="M21 8V5a2 2 0 0 0-2-2h-3"
-          /><path d="M3 16v3a2 2 0 0 0 2 2h3" /><path
-            d="M16 21h3a2 2 0 0 0 2-2v-3"
-          /></svg
-        >
+        <Maximize size={24} strokeWidth={2} aria-hidden="true" />
       {:else}
-        <!-- https://lucide.dev/icons/minimize -->
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="lucide lucide-minimize-icon lucide-minimize"
-          aria-hidden="true"
-          ><path d="M8 3v3a2 2 0 0 1-2 2H3" /><path
-            d="M21 8h-3a2 2 0 0 1-2-2V3"
-          /><path d="M3 16h3a2 2 0 0 1 2 2v3" /><path
-            d="M16 21v-3a2 2 0 0 1 2-2h3"
-          /></svg
-        >
+        <Minimize size={24} strokeWidth={2} aria-hidden="true" />
       {/if}
     </button>
   </div>
 </div>
 
-<style>
+<style lang="postcss">
+  @reference "tailwindcss";
+
   .player-root {
-    width: min(60vw, calc(60vh * 16 / 9));
-    height: calc(min(60vw, 60vh * 16 / 9) / (16 / 9));
-    max-width: 90vw;
-    max-height: 90vh;
-    aspect-ratio: 16 / 9;
-    border: 2px solid #333;
-    background-color: #000;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-    touch-action: none;
-    box-sizing: border-box;
-    position: relative;
-    z-index: 2;
-    overflow: hidden;
+    @apply relative 
+    w-[min(60vw,calc(60vh*16/9))] h-[calc(min(60vw,60vh*16/9)/(16/9))] 
+    max-w-[90vw] max-h-[90vh]
+    aspect-video 
+    border-2 border-neutral-800 
+    bg-black shadow-[0_0_15px_rgba(0,0,0,0.5)]
+    touch-none 
+    box-border 
+    z-2 
+    overflow-hidden;
   }
 
   @media (max-width: 600px) {
     .player-root {
-      width: min(90vw, calc(90vh * 16 / 9));
-      height: calc(min(90vw, 90vh * 16 / 9) / (16 / 9));
+      @apply w-[min(90vw,calc(90vh*16/9))] h-[calc(min(90vw,90vh*16/9)/(16/9))];
     }
   }
 
   .controls {
-    position: absolute;
-    right: 10px;
-    bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: rgba(0, 0, 0, 0.35);
-    backdrop-filter: blur(2px);
-    border-radius: 8px;
-    padding: 6px 8px;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(6px) translateZ(0);
-    transition:
-      opacity 0.2s ease,
-      transform 0.2s ease,
-      visibility 0.2s ease;
-    z-index: 10;
-    isolation: isolate;
+    @apply absolute 
+    right-[10px] bottom-[10px] 
+    flex 
+    items-center 
+    gap-[10px]
+    bg-black/35 
+    backdrop-blur-[2px] 
+    rounded-lg 
+    px-2 py-1.5 
+    opacity-0 
+    invisible 
+    translate-y-[6px]
+    transition-all duration-200 ease-in-out 
+    z-10 
+    isolate;
   }
 
   .controls.visible {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
+    @apply opacity-100 visible translate-y-0;
   }
 
   .icon-btn {
-    background: transparent;
-    border: none;
-    color: #fff;
-    width: 32px;
-    height: 32px;
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-    border-radius: 6px;
-  }
-
-  .icon-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
+    @apply bg-transparent 
+    border-0 
+    text-white 
+    w-8 h-8 
+    grid 
+    place-items-center 
+    cursor-pointer 
+    rounded-[6px]
+    hover:bg-white/10;
   }
 
   .volume-slider {
-    width: 120px;
-    accent-color: #fff;
+    @apply w-[120px] accent-white;
   }
 
   .player-root.hide-cursor,
   .player-root.hide-cursor * {
-    cursor: none !important;
+    @apply cursor-none;
   }
 </style>

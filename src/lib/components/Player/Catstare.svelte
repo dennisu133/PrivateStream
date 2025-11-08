@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { Cat } from "@lucide/svelte";
+  import { mount, unmount } from "svelte";
   let { containerEl = $bindable<HTMLDivElement | null>() } = $props();
 
   let showCatStare = $state(false);
@@ -108,8 +110,10 @@
     btn.className = "catstare-injected-button";
     btn.setAttribute("aria-label", "Summon cat");
     btn.title = "Summon cat (c)";
-    btn.innerHTML = `
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-cat-icon lucide-cat" aria-hidden="true"><path d="M12 5c.67 0 1.35.09 2 .26 1.78-2 5.03-2.84 6.42-2.26 1.4.58-.42 7-.42 7 .57 1.07 1 2.24 1 3.44C21 17.9 16.97 21 12 21s-9-3-9-7.56c0-1.25.5-2.4 1-3.44 0 0-1.89-6.42-.5-7 1.39-.58 4.72.23 6.5 2.23A9.04 9.04 0 0 1 12 5Z"/><path d="M8 14v.5"/><path d="M16 14v.5"/><path d="M11.25 16.25h1.5L12 17l-.75-.75Z"/></svg>`;
+    const icon = mount(Cat, {
+      target: btn,
+      props: { size: 24, strokeWidth: 2, "aria-hidden": true },
+    });
     const onClick = () => {
       triggerCatStare();
     };
@@ -117,6 +121,7 @@
     host.insertBefore(btn, host.firstChild);
     return () => {
       btn.removeEventListener("click", onClick);
+      unmount(icon);
       if (btn.parentNode) btn.parentNode.removeChild(btn);
     };
   });
@@ -138,46 +143,37 @@
   </div>
 </div>
 
-<style>
-  :global(.catstare-injected-button) {
-    background: transparent;
-    border: none;
-    color: #fff;
-    width: 32px;
-    height: 32px;
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-    border-radius: 6px;
-  }
+<style lang="postcss">
+  @reference "tailwindcss";
 
-  :global(.catstare-injected-button:hover) {
-    background: rgba(255, 255, 255, 0.08);
+  :global(.catstare-injected-button) {
+    @apply bg-transparent 
+    border-0 
+    text-white 
+    w-8 h-8 
+    grid 
+    place-items-center 
+    cursor-pointer 
+    rounded-[6px]
+    hover:bg-white/10;
   }
 
   .catstare-overlay {
-    position: fixed; /* left/top/width/height set inline */
-    display: grid;
-    place-items: center;
-    pointer-events: none;
-    z-index: 5;
-    opacity: 0;
-    transform: scale(0.98);
-    transition:
-      opacity 250ms ease,
-      transform 250ms ease;
+    @apply fixed 
+    grid 
+    place-items-center 
+    pointer-events-none 
+    z-5 
+    opacity-0 
+    scale-[0.98]
+    transition-all duration-250 ease-in-out;
   }
 
   .catstare-overlay.visible {
-    opacity: 1;
-    transform: scale(1);
+    @apply opacity-100 scale-100;
   }
 
   .catstare-overlay img {
-    display: block;
-    object-fit: contain;
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.7);
+    @apply block object-contain shadow-[0_12px_28px_rgba(0,0,0,0.7)];
   }
-
-  /* no button styles here; the button lives in Player controls */
 </style>
