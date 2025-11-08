@@ -15,15 +15,18 @@ export const actions: Actions = {
     const data = await request.formData();
     const password = data.get("password")?.toString(); // Get password as string
 
-    const passwordHash = env.SITE_PASSWORD_HASH;
+    const passwordHashBase64 = env.SITE_PASSWORD_HASH;
 
-    if (!passwordHash) {
+    if (!passwordHashBase64) {
       return fail(500, { error: "Server is not configured with a password." });
     }
 
     if (!password) {
       return fail(400, { error: "Password is required." });
     }
+
+    // Decode base64 hash back to original bcrypt hash
+    const passwordHash = Buffer.from(passwordHashBase64, 'base64').toString();
 
     // Use bcrypt to securely compare the submitted password with the stored hash
     const match = await bcrypt.compare(password, passwordHash);

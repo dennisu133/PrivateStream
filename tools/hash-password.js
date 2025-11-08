@@ -14,7 +14,8 @@ if (!password) {
 
 const saltRounds = 12;
 const hash = bcrypt.hashSync(password, saltRounds);
+const base64Hash = Buffer.from(hash).toString('base64');
 
-console.log('Your hashed password is:\n');
-console.log(hash);
+console.log('Your hashed password (base64 encoded) is:\n');
+console.log(base64Hash);
 console.log('\nCopy this hash and paste it into your .env file as SITE_PASSWORD_HASH.');
