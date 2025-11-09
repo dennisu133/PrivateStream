@@ -1,4 +1,4 @@
-import { existsSync } from "fs";
+import { existsSync } from "node:fs";
 import type { Handle } from "@sveltejs/kit";
 
 // Check .env file exists on startup
