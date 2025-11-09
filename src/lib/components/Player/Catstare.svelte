@@ -1,7 +1,9 @@
 <script lang="ts">
-  import { Cat } from "@lucide/svelte";
-  import { mount, unmount } from "svelte";
-  let { containerEl = $bindable<HTMLDivElement | null>() } = $props();
+  let {
+    containerEl = $bindable<HTMLDivElement | null>(),
+    imagePath = "/cats/stare.jpg",
+    images = $bindable<string[] | null>(null),
+  } = $props();
 
   let showCatStare = $state(false);
   let overlaySizePx = $state(0);
@@ -40,6 +42,13 @@
       window.removeEventListener("orientationchange", onWindow);
       window.removeEventListener("scroll", onWindow);
     };
+  });
+
+  // Preload current image so overlay appears instantly
+  $effect(() => {
+    if (!imagePath) return;
+    const img = new Image();
+    img.src = imagePath;
   });
 
   // SSE listen for catstare
@@ -98,33 +107,7 @@
     return () => window.removeEventListener("keydown", onKeydown);
   });
 
-  // Inject control button into the player's controls. This allows easy removal from Main.svelte
-  $effect(() => {
-    if (!containerEl) return;
-    const host = containerEl.querySelector(
-      ".controls"
-    ) as HTMLDivElement | null;
-    if (!host) return;
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "catstare-injected-button";
-    btn.setAttribute("aria-label", "Summon cat");
-    btn.title = "Summon cat (c)";
-    const icon = mount(Cat, {
-      target: btn,
-      props: { size: 24, strokeWidth: 2, "aria-hidden": true },
-    });
-    const onClick = () => {
-      triggerCatStare();
-    };
-    btn.addEventListener("click", onClick);
-    host.insertBefore(btn, host.firstChild);
-    return () => {
-      btn.removeEventListener("click", onClick);
-      unmount(icon);
-      if (btn.parentNode) btn.parentNode.removeChild(btn);
-    };
-  });
+  // (button now rendered in Main.svelte; keep keybinding here)
 </script>
 
 <div class="catstare-root" style="display: contents;">
@@ -136,7 +119,7 @@
     style={`position:fixed;left:${rectLeft}px;top:${rectTop}px;width:${rectWidth}px;height:${rectHeight}px;`}
   >
     <img
-      src="/catstare.jpg"
+      src={imagePath}
       alt="Cat stare"
       style={`width:${overlaySizePx}px;height:${overlaySizePx}px`}
     />

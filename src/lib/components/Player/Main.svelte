@@ -1,8 +1,16 @@
 <!-- Custom video player -->
 
+<script module lang="ts">
+  export const HIDE_DELAY_MS = 2000;
+  export const VOLUME_STEP = 0.05;
+  export const DEFAULT_UNMUTE_VOLUME = 0.5;
+  export const ASPECT_RATIO = 16 / 9;
+</script>
+
 <script lang="ts">
   import interact from "interactjs";
   import Catstare from "./Catstare.svelte";
+  import CatstareButton from "./CatstareButton.svelte";
   import { whep } from "$lib/actions/whep";
   import type { ResizeEvent } from "@interactjs/types";
   import {
@@ -21,7 +29,6 @@
   } = $props();
 
   let containerEl = $state<HTMLDivElement | null>(null);
-  let controlsEl: HTMLDivElement;
   let volume = $state(0);
   let isMuted = $state(true);
   let isFullscreen = $state(false);
@@ -29,10 +36,6 @@
   let isPointerOverControls = $state(false);
   let lastNonZeroVolume = $state(0.5);
   let hideTimer: number | undefined;
-
-  const HIDE_DELAY_MS = 2000;
-  const VOLUME_STEP = 0.05;
-  const DEFAULT_UNMUTE_VOLUME = 0.5;
 
   function getOuterRect() {
     return {
@@ -134,12 +137,9 @@
     }
   }
 
-  function onSliderInput(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const next = Number(input.value);
-    if (!Number.isNaN(next)) {
-      setVolumeNormalized(next);
-    }
+  function onSliderWrite(next: unknown) {
+    const n = Number(next);
+    if (!Number.isNaN(n)) setVolumeNormalized(n);
     showControlsTemporarily();
   }
 
@@ -148,91 +148,62 @@
     showControlsTemporarily();
   }
 
-  $effect(() => {
-    document.addEventListener("fullscreenchange", onFullscreenChange);
-    return () =>
-      document.removeEventListener("fullscreenchange", onFullscreenChange);
-  });
-
-  // Keyboard controls: ArrowUp/Down ±5%, 'm' mute, 'f' fullscreen
-  $effect(() => {
-    const onKeydown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (target) {
-        const tag = (target.tagName || "").toLowerCase();
-        if (
-          tag === "input" ||
-          tag === "textarea" ||
-          (target as HTMLElement).isContentEditable
-        ) {
-          return;
-        }
+  function onKeydown(event: KeyboardEvent) {
+    const target = event.target as HTMLElement | null;
+    if (target) {
+      const tag = (target.tagName || "").toLowerCase();
+      if (
+        tag === "input" ||
+        tag === "textarea" ||
+        (target as HTMLElement).isContentEditable
+      ) {
+        return;
       }
-      const actions: Record<string, () => void> = {
-        ArrowUp: () => {
-          setVolumeNormalized(volume + VOLUME_STEP);
-          showControlsTemporarily();
-        },
-        ArrowDown: () => {
-          setVolumeNormalized(volume - VOLUME_STEP);
-          showControlsTemporarily();
-        },
-        m: toggleMute,
-        M: toggleMute,
-        f: toggleFullscreen,
-        F: toggleFullscreen,
-      };
-      const action = actions[event.key];
-      if (action) {
-        event.preventDefault();
-        action();
-      }
+    }
+    const actions: Record<string, () => void> = {
+      ArrowUp: () => {
+        setVolumeNormalized(volume + VOLUME_STEP);
+        showControlsTemporarily();
+      },
+      ArrowDown: () => {
+        setVolumeNormalized(volume - VOLUME_STEP);
+        showControlsTemporarily();
+      },
+      m: toggleMute,
+      M: toggleMute,
+      f: toggleFullscreen,
+      F: toggleFullscreen,
     };
-    window.addEventListener("keydown", onKeydown);
-    return () => window.removeEventListener("keydown", onKeydown);
-  });
+    const action = actions[event.key];
+    if (action) {
+      event.preventDefault();
+      action();
+    }
+  }
 
   // Pointer activity within the player keeps controls visible
-  $effect(() => {
-    const el = containerEl;
-    if (!el) return;
-    const onMove = () => showControlsTemporarily();
-    const onDown = () => showControlsTemporarily();
-    el.addEventListener("pointermove", onMove);
-    el.addEventListener("pointerdown", onDown);
-    return () => {
-      el.removeEventListener("pointermove", onMove);
-      el.removeEventListener("pointerdown", onDown);
-    };
-  });
 
   // Hovering controls prevents auto-hide; leaving reschedules hide
-  $effect(() => {
-    if (!controlsEl) return;
-    const onEnter = () => {
-      isPointerOverControls = true;
-      controlsVisible = true;
-      clearHideTimer();
-    };
-    const onLeave = () => {
-      isPointerOverControls = false;
-      scheduleHide();
-    };
-    controlsEl.addEventListener("pointerenter", onEnter);
-    controlsEl.addEventListener("pointerleave", onLeave);
-    return () => {
-      controlsEl.removeEventListener("pointerenter", onEnter);
-      controlsEl.removeEventListener("pointerleave", onLeave);
-    };
-  });
+  function onControlsEnter() {
+    isPointerOverControls = true;
+    controlsVisible = true;
+    clearHideTimer();
+  }
+  function onControlsLeave() {
+    isPointerOverControls = false;
+    scheduleHide();
+  }
 
   // Resizing logic
   $effect(() => {
     const el = containerEl;
     if (!el) return;
 
-    const ASPECT_RATIO = 16 / 9;
     const MAX_MARGIN_FACTOR = 0.9;
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
+    if (coarse) {
+      return;
+    }
     const interactable = interact(el);
 
     function computeConstraints() {
@@ -287,33 +258,54 @@
     // Initial setup with listeners
     applyResizable(true);
 
-    // Re-apply constraints on viewport or parent changes
-    const onWindowResize = () => applyResizable(false);
-    window.addEventListener("resize", onWindowResize);
-    window.addEventListener("orientationchange", onWindowResize);
+    // Re-apply constraints on viewport or parent changes (throttled)
+    let raf = 0;
+    const scheduleReapply = () => {
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        applyResizable(false);
+      });
+    };
+    window.addEventListener("resize", scheduleReapply);
+    window.addEventListener("orientationchange", scheduleReapply);
 
     const parentEl = el.parentElement as HTMLElement | null;
     let resizeObserver: ResizeObserver | undefined;
     if (parentEl) {
-      resizeObserver = new ResizeObserver(() => applyResizable(false));
+      resizeObserver = new ResizeObserver(() => scheduleReapply());
       resizeObserver.observe(parentEl);
     }
 
     return () => {
       if (resizeObserver) resizeObserver.disconnect();
-      window.removeEventListener("resize", onWindowResize);
-      window.removeEventListener("orientationchange", onWindowResize);
-      if (interact.isSet(el)) {
-        interact(el).unset();
+      window.removeEventListener("resize", scheduleReapply);
+      window.removeEventListener("orientationchange", scheduleReapply);
+      if (raf) cancelAnimationFrame(raf);
+      interactable.unset();
+    };
+  });
+
+  // clear pending hide timer on unmount
+  $effect(() => {
+    return () => {
+      if (hideTimer !== undefined) {
+        window.clearTimeout(hideTimer);
+        hideTimer = undefined;
       }
     };
   });
 </script>
 
+<svelte:document onfullscreenchange={onFullscreenChange} />
+<svelte:window onkeydown={onKeydown} />
+
 <div
   bind:this={containerEl}
   class="player-root"
   class:hide-cursor={isFullscreen && !controlsVisible}
+  onpointermove={showControlsTemporarily}
+  onpointerdown={showControlsTemporarily}
 >
   <video
     bind:this={videoEl}
@@ -324,11 +316,10 @@
     style="width: 100%; height: 100%; display: block;"
   ></video>
 
-  {#if enableJokeFeatures}
-    <Catstare {containerEl} />
-  {/if}
-
-  <div bind:this={controlsEl} class="controls" class:visible={controlsVisible}>
+  <div class="controls" class:visible={controlsVisible} onpointerenter={onControlsEnter} onpointerleave={onControlsLeave}>
+    {#if enableJokeFeatures}
+      <CatstareButton />
+    {/if}
     <button
       type="button"
       class="icon-btn"
@@ -354,9 +345,11 @@
       min="0"
       max="1"
       step="0.05"
-      value={volume}
-      oninput={onSliderInput}
+      bind:value={() => volume, onSliderWrite}
       aria-label="Volume"
+      aria-valuemin="0"
+      aria-valuemax="1"
+      aria-valuenow={volume}
     />
 
     <button
@@ -373,6 +366,10 @@
       {/if}
     </button>
   </div>
+
+  {#if enableJokeFeatures}
+    <Catstare {containerEl} />
+  {/if}
 </div>
 
 <style lang="postcss">
@@ -389,6 +386,11 @@
     box-border 
     z-2 
     overflow-hidden;
+  }
+
+  /* Remove border during native fullscreen */
+  .player-root:fullscreen {
+    @apply border-0;
   }
 
   @media (max-width: 600px) {

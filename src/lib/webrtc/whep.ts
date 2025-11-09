@@ -9,34 +9,38 @@ async function negotiate(pc: RTCPeerConnection, endpoint: string) {
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
 
-  console.log('[WHEP] Posting SDP to endpoint', endpoint);
+  console.log("[WHEP] Posting SDP to endpoint", endpoint);
   const response = await fetch(endpoint, {
-    method: 'POST',
+    method: "POST",
     body: pc.localDescription?.sdp,
-    headers: { 'Content-Type': 'application/sdp' }
+    headers: { "Content-Type": "application/sdp" },
   });
 
   if (!response.ok) {
-    console.error('[WHEP] WHEP request failed', response.status, response.statusText);
+    console.error(
+      "[WHEP] WHEP request failed",
+      response.status,
+      response.statusText
+    );
     throw new Error(`WHEP failed: ${response.status} ${response.statusText}`);
   }
 
   const answerSdp = await response.text();
-  await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
-  console.log('[WHEP] Connection negotiation successful');
+  await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
+  console.log("[WHEP] Connection negotiation successful");
 }
 
 export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}) {
-  const endpoint = opts.endpoint ?? '/api/whep';
+  const endpoint = opts.endpoint ?? "/api/whep";
   const initialDelay = opts.initialReconnectDelay ?? 1000;
   const maxDelay = opts.maxReconnectDelay ?? 30000;
   let currentReconnectDelay = initialDelay;
 
-  console.log('[WHEP] Starting WHEP connection', { endpoint });
+  console.log("[WHEP] Starting WHEP connection", { endpoint });
   const pc = new RTCPeerConnection();
 
-  pc.addTransceiver('video', { direction: 'recvonly' });
-  pc.addTransceiver('audio', { direction: 'recvonly' });
+  pc.addTransceiver("video", { direction: "recvonly" });
+  pc.addTransceiver("audio", { direction: "recvonly" });
 
   pc.ontrack = (event) => {
     console.log(`[WHEP] ${event.track?.kind} track received `, event.track);
@@ -59,10 +63,10 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}) {
       console.warn(`[WHEP] Attempting reconnect`);
       negotiate(pc, endpoint)
         .then(() => {
-          console.log('[WHEP] Reconnected successfully');
+          console.log("[WHEP] Reconnected successfully");
         })
         .catch((e) => {
-          console.error('[WHEP] Reconnect attempt failed', e);
+          console.error("[WHEP] Reconnect attempt failed", e);
           // Increase delay for next attempt
           currentReconnectDelay = Math.min(maxDelay, currentReconnectDelay * 2);
           scheduleReconnect();
@@ -71,21 +75,24 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}) {
   };
 
   pc.onconnectionstatechange = () => {
-    console.log('[WHEP] state', pc.connectionState);
+    console.log("[WHEP] state", pc.connectionState);
     opts.onStateChange?.(pc.connectionState);
 
-    if (pc.connectionState === 'connected') {
+    if (pc.connectionState === "connected") {
       // If we are connected, reset the reconnect delay
       currentReconnectDelay = initialDelay;
     }
 
-    if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+    if (
+      pc.connectionState === "disconnected" ||
+      pc.connectionState === "failed"
+    ) {
       scheduleReconnect();
     }
   };
 
   negotiate(pc, endpoint).catch((e) => {
-    console.error('Error starting WHEP stream:', e);
+    console.error("Error starting WHEP stream:", e);
     if (!closed) {
       scheduleReconnect();
     }
@@ -97,14 +104,14 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}) {
     destroy() {
       if (closed) return;
       closed = true;
-      console.log('[WHEP] Closing connection');
+      console.log("[WHEP] Closing connection");
       try {
         pc.close();
-      } catch { }
+      } catch {}
       if (reconnectTimer !== null) {
         clearTimeout(reconnectTimer);
         reconnectTimer = null;
       }
-    }
+    },
   };
 }
