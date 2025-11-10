@@ -1,17 +1,17 @@
 <script lang="ts">
   let {
     containerEl = $bindable<HTMLDivElement | null>(),
-    imagePath = "/cats/stare.jpg",
+    imagePath = "/reactions/stare.jpg",
     images = $bindable<string[] | null>(null),
   } = $props();
 
-  let showCatStare = $state(false);
+  let showReaction = $state(false);
   let overlaySizePx = $state(0);
   let rectLeft = $state(0);
   let rectTop = $state(0);
   let rectWidth = $state(0);
   let rectHeight = $state(0);
-  let catTimer: number | undefined;
+  let reactionTimer: number | undefined;
 
   function updateOverlayRect() {
     if (!containerEl) return;
@@ -51,40 +51,40 @@
     img.src = imagePath;
   });
 
-  // SSE listen for catstare
+  // SSE listen for reaction events
   $effect(() => {
     const es = new EventSource("/api/events");
-    const onCat = () => {
-      if (catTimer !== undefined) {
-        clearTimeout(catTimer);
-        catTimer = undefined;
+    const onReaction = () => {
+      if (reactionTimer !== undefined) {
+        clearTimeout(reactionTimer);
+        reactionTimer = undefined;
       }
-      showCatStare = true;
-      catTimer = window.setTimeout(() => {
-        showCatStare = false;
-        catTimer = undefined;
+      showReaction = true;
+      reactionTimer = window.setTimeout(() => {
+        showReaction = false;
+        reactionTimer = undefined;
       }, 1000);
     };
-    es.addEventListener("catstare", onCat);
+    es.addEventListener("reaction", onReaction);
     return () => {
-      es.removeEventListener("catstare", onCat);
+      es.removeEventListener("reaction", onReaction);
       es.close();
     };
   });
 
-  async function triggerCatStare() {
+  async function triggerReaction() {
     try {
       await fetch("/api/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "catstare", payload: { at: Date.now() } }),
+        body: JSON.stringify({ type: "reaction", payload: { at: Date.now() } }),
       });
     } catch (e) {
-      console.error("Failed to trigger catstare", e);
+      console.error("Failed to trigger reaction", e);
     }
   }
 
-  // Keybinding: press 'c' to trigger catstare
+  // Keybinding: press 'r' to trigger reaction
   $effect(() => {
     const onKeydown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
@@ -98,29 +98,27 @@
           return;
         }
       }
-      if (event.key === "c" || event.key === "C") {
+      if (event.key === "r" || event.key === "R") {
         event.preventDefault();
-        triggerCatStare();
+        triggerReaction();
       }
     };
     window.addEventListener("keydown", onKeydown);
     return () => window.removeEventListener("keydown", onKeydown);
   });
-
-  // (button now rendered in Main.svelte; keep keybinding here)
 </script>
 
-<div class="catstare-root" style="display: contents;">
+<div class="reaction-root" style="display: contents;">
   <!-- Fixed overlay aligned to the player rect -->
   <div
-    class="catstare-overlay"
-    class:visible={showCatStare}
-    aria-hidden={!showCatStare}
+    class="reaction-overlay"
+    class:visible={showReaction}
+    aria-hidden={!showReaction}
     style={`position:fixed;left:${rectLeft}px;top:${rectTop}px;width:${rectWidth}px;height:${rectHeight}px;`}
   >
     <img
       src={imagePath}
-      alt="Cat stare"
+      alt="Reaction"
       style={`width:${overlaySizePx}px;height:${overlaySizePx}px`}
     />
   </div>
@@ -129,7 +127,7 @@
 <style lang="postcss">
   @reference "tailwindcss";
 
-  :global(.catstare-injected-button) {
+  :global(.reaction-injected-button) {
     @apply bg-transparent 
     border-0 
     text-white 
@@ -141,7 +139,7 @@
     hover:bg-white/10;
   }
 
-  .catstare-overlay {
+  .reaction-overlay {
     @apply fixed 
     grid 
     place-items-center 
@@ -152,11 +150,11 @@
     transition-all duration-250 ease-in-out;
   }
 
-  .catstare-overlay.visible {
+  .reaction-overlay.visible {
     @apply opacity-100 scale-100;
   }
 
-  .catstare-overlay img {
+  .reaction-overlay img {
     @apply block object-contain shadow-[0_12px_28px_rgba(0,0,0,0.7)];
   }
 </style>

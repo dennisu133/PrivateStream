@@ -9,8 +9,8 @@
 
 <script lang="ts">
   import interact from "interactjs";
-  import Catstare from "./Catstare.svelte";
-  import CatstareButton from "./CatstareButton.svelte";
+  import Reaction from "./Reaction.svelte";
+  import ReactionButton from "./ReactionButton.svelte";
   import { whep } from "$lib/actions/whep";
   import type { ResizeEvent } from "@interactjs/types";
   import {
@@ -318,7 +318,7 @@
 
   <div class="controls" class:visible={controlsVisible} onpointerenter={onControlsEnter} onpointerleave={onControlsLeave}>
     {#if enableJokeFeatures}
-      <CatstareButton />
+      <ReactionButton />
     {/if}
     <button
       type="button"
@@ -368,7 +368,7 @@
   </div>
 
   {#if enableJokeFeatures}
-    <Catstare {containerEl} />
+    <Reaction {containerEl} />
   {/if}
 </div>
 

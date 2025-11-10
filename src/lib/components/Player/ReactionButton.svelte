@@ -1,35 +1,35 @@
 <script lang="ts">
-  import { Cat } from "@lucide/svelte";
+  import { Sticker } from "@lucide/svelte";
 
-  async function triggerCatStare() {
+  async function triggerReaction() {
     try {
       await fetch("/api/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "catstare", payload: { at: Date.now() } }),
+        body: JSON.stringify({ type: "reaction", payload: { at: Date.now() } }),
       });
     } catch (e) {
-      console.error("Failed to trigger catstare", e);
+      console.error("Failed to trigger reaction", e);
     }
   }
 </script>
 
 <button
   type="button"
-  class="catstare-btn"
-  aria-label="Summon cat"
-  title="Summon cat (c)"
-  onclick={triggerCatStare}
+  class="reaction-btn"
+  aria-label="react"
+  title="react (r)"
+  onclick={triggerReaction}
 >
-  <Cat size={24} strokeWidth={2} aria-hidden="true" />
-  <span class="sr-only">Summon cat</span>
+  <Sticker size={24} strokeWidth={2} aria-hidden="true" />
+  <span class="sr-only">react</span>
   <!-- visually-hidden label for a11y -->
 </button>
 
 <style lang="postcss">
   @reference "tailwindcss";
 
-  .catstare-btn {
+  .reaction-btn {
     @apply bg-transparent 
     border-0 
     text-white 
