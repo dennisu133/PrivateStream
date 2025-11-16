@@ -1,7 +1,7 @@
 import { fail, redirect } from "@sveltejs/kit";
 import { env } from "$env/dynamic/private";
-import type { Actions, PageServerLoad } from "./$types";
 import bcrypt from "bcrypt";
+import type { Actions, PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = async ({ locals }) => {
   // If the user is already logged in, redirect them to the stream page
@@ -13,7 +13,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 export const actions: Actions = {
   default: async ({ request, cookies }) => {
     const data = await request.formData();
-    const password = data.get("password")?.toString(); // Get password as string
+    const password = data.get("password")?.toString();
 
     const passwordHashBase64 = env.SITE_PASSWORD_HASH;
 
@@ -26,7 +26,7 @@ export const actions: Actions = {
     }
 
     // Decode base64 hash back to original bcrypt hash
-    const passwordHash = Buffer.from(passwordHashBase64, 'base64').toString();
+    const passwordHash = Buffer.from(passwordHashBase64, "base64").toString();
 
     // Use bcrypt to securely compare the submitted password with the stored hash
     const match = await bcrypt.compare(password, passwordHash);

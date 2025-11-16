@@ -1,81 +1,93 @@
-import type { RequestHandler } from "./$types";
 import { error } from "@sveltejs/kit";
 import { env } from "$env/dynamic/private";
+import type { RequestHandler } from "./$types";
 
-const srsWhepUrl = env.SRS_WHEP_URL;
+const SRS_WHEP_URL = env.SRS_WHEP_URL;
+const FORWARD_TIMEOUT_MS = 10_000;
+const IPIFY_URL = "https://api.ipify.org";
+const IPIFY_TIMEOUT_MS = 5_000;
+const IPIFY_CACHE_MS = 5 * 60 * 1000;
+
+type CachedIp = { value: string; expiresAt: number } | null;
+
+let cachedServerIp: CachedIp = null;
+
+function withTimeout(
+	input: RequestInfo | URL,
+	init: RequestInit | undefined,
+	ms: number,
+) {
+	const controller = new AbortController();
+	const t = setTimeout(() => controller.abort(), ms);
+	return {
+		fetch: () =>
+			fetch(input, { ...init, signal: controller.signal }).finally(() =>
+				clearTimeout(t),
+			),
+	};
+}
+
+async function resolveServerIp() {
+	const now = Date.now();
+	if (cachedServerIp && cachedServerIp.expiresAt > now) {
+		return cachedServerIp.value;
+	}
+
+	const { fetch: timedFetch } = withTimeout(
+		IPIFY_URL,
+		undefined,
+		IPIFY_TIMEOUT_MS,
+	);
+	const res = await timedFetch();
+	if (!res.ok) {
+		throw error(res.status, "Failed to resolve server IP");
+	}
+	const ip = (await res.text()).trim();
+	if (!ip) throw error(500, "Empty IP received from ipify");
+	cachedServerIp = { value: ip, expiresAt: now + IPIFY_CACHE_MS };
+	return ip;
+}
 
 export const POST: RequestHandler = async ({ request, locals }) => {
-  // API Route Guard: Check for a valid session
-  if (!locals.user) {
-    throw error(
-      401,
-      "Unauthorized: You must be verified to access the stream."
-    );
-  }
+	if (!locals.user) {
+		throw error(401, "Unauthorized");
+	}
+	if (!SRS_WHEP_URL) {
+		throw error(500, "Missing SRS_WHEP_URL");
+	}
 
-  if (!srsWhepUrl) {
-    throw error(
-      500,
-      "SRS_WHEP_URL is not defined in the environment variables."
-    );
-  }
+	const offerSdp = await request.text();
+	if (!offerSdp) {
+		throw error(400, "Missing SDP offer");
+	}
 
-  try {
-    // Fetch the public IP from ipify
-    const ipResponse = await fetch("https://api.ipify.org");
-    if (!ipResponse.ok) {
-      throw error(500, "Failed to fetch public IP from ipify.org");
-    }
-    const candidateIp = await ipResponse.text();
+	const serverIp = await resolveServerIp();
 
-    // Append the resolved IP as the 'eip' (external IP) query parameter for SRS
-    const srsUrlWithCandidate = new URL(srsWhepUrl);
-    srsUrlWithCandidate.searchParams.set("eip", candidateIp);
+	const target = new URL(SRS_WHEP_URL);
+	target.searchParams.set("eip", serverIp);
 
-    const offerSdp = await request.text();
+	console.log("[WHEP] Proxy ->", target.toString());
+	const { fetch: _fetch } = withTimeout(
+		target.toString(),
+		{
+			method: "POST",
+			headers: { "Content-Type": "application/sdp" },
+			body: offerSdp,
+		},
+		FORWARD_TIMEOUT_MS,
+	);
 
-    if (!offerSdp) {
-      throw error(400, "SDP offer is required in the request body.");
-    }
+	const res = await _fetch();
+	if (!res.ok) {
+		const text = await res.text().catch(() => "");
+		console.error("[WHEP] SRS error", res.status, res.statusText, text);
+		throw error(res.status, text || "SRS error");
+	}
 
-    // Forward the request to SRS with the dynamic candidate IP
-    const response = await fetch(srsUrlWithCandidate.toString(), {
-      method: "POST",
-      body: offerSdp,
-      headers: {
-        "Content-Type": "application/sdp",
-      },
-    });
-
-    if (!response.ok) {
-      const responseText = await response.text();
-      console.error(
-        `Error from SRS server: ${response.status} ${response.statusText}`,
-        responseText
-      );
-      throw error(
-        response.status,
-        `Failed to connect to SRS server: ${responseText}`
-      );
-    }
-
-    const answerSdp = await response.text();
-
-    // Return the SDP answer from SRS back to the client
-    return new Response(answerSdp, {
-      status: 200,
-      headers: {
-        "Content-Type": "application/sdp",
-      },
-    });
-  } catch (e: any) {
-    console.error("Error in WHEP proxy endpoint:", e);
-    if (e.status) {
-      throw e;
-    }
-    throw error(
-      500,
-      "An internal error occurred while proxying the WHEP request."
-    );
-  }
+	const answerSdp = await res.text();
+	console.log("[WHEP] Proxy <- 200 answer");
+	return new Response(answerSdp, {
+		status: 200,
+		headers: { "Content-Type": "application/sdp" },
+	});
 };

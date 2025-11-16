@@ -3,19 +3,21 @@
 // Run this from your terminal with: node hash-password.js <your_secret_password>
 // Make sure to add the generated hash to the .env file
 
-import bcrypt from 'bcrypt';
+import bcrypt from "bcrypt";
 
 const password = process.argv[2];
 
 if (!password) {
-	console.error('Usage: node hash-password.js <password>');
+	console.error("Usage: node hash-password.js <password>");
 	process.exit(1);
 }
 
 const saltRounds = 12;
 const hash = bcrypt.hashSync(password, saltRounds);
-const base64Hash = Buffer.from(hash).toString('base64');
+const base64Hash = Buffer.from(hash).toString("base64");
 
-console.log('Your hashed password (base64 encoded) is:\n');
+console.log("Your hashed password (base64 encoded) is:\n");
 console.log(base64Hash);
-console.log('\nCopy this hash and paste it into your .env file as SITE_PASSWORD_HASH.');
+console.log(
+	"\nCopy this hash and paste it into your .env file as SITE_PASSWORD_HASH.",
+);

@@ -25,8 +25,16 @@
     @apply bg-black 
     bg-[linear-gradient(135deg,#101018_0%,#0d0d12_50%,#000000_100%)] 
     bg-fixed bg-no-repeat 
-    text-[#e0e0e0] 
+    text-white
     font-sans 
     m-0;
+  }
+
+  :global(main) {
+    @apply flex 
+    justify-center 
+    items-center 
+    h-screen 
+    w-screen;
   }
 </style>

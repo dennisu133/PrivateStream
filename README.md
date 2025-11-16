@@ -67,6 +67,7 @@ Before deploying you need to set some environment variables within a `.env` file
 If you want to deploy on a VPS you will need:
 
 - build/ directory
+- static/reactions/ directory
 - package.json
 - .env file
 - pm2_bun_workaround/ directory (if deploying with bun)
@@ -87,7 +88,7 @@ This is an additional security feature that can be disabled inside [svelte.confi
 
 Sveltekit offers a built-in protection against Cross-Site Request Forgery (CSRF) attacks. We need to set trusted origins (or disable it) so submissions like the login form work correctly. To set them please do the following:
 
-1. Navigate to the `server/` directory.
+1. Navigate to the `csrf/` directory.
 2. Rename `csrf-origins.example.js` to `csrf-origins.js`.
 3. Open the `csrf-origins.js` and replace the placeholder domains with your own. Refer to the examples within.
 
@@ -107,3 +108,4 @@ Currently there is a bug when running Sveltekit + bun + pm2. For more informatio
 
 - **[SRS](https://github.com/ossrs/srs):** For providing the fantastic framework that makes WebRTC relaying accessible and easy to implement.
 - **[OBS Studio](https://github.com/obsproject/obs-studio):** For being the gold standard in broadcasting and making the streaming source setup effortless.
+- **Gregory Bell** for the creation of [Web Neko](https://webneko.net/)
