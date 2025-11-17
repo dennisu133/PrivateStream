@@ -17,29 +17,75 @@ const ALLOWED = new Set([
 const encoder = new TextEncoder();
 const REACTIONS_DIR = path.join(process.cwd(), "static", "reactions");
 
-// In-memory SSE subscribers
-const subscribers = new Set<{
+type ReactionRecord = {
+	id: string;
+	file: string;
+	name: string;
+	url: string;
+};
+
+type Sink = {
 	write: (data: string) => void;
 	close: () => void;
-}>();
+};
 
-function subscribe(sink: { write: (data: string) => void; close: () => void }) {
+const subscribers = new Set<Sink>();
+let reactionsCache: ReactionRecord[] | null = null;
+
+function subscribe(sink: Sink) {
 	subscribers.add(sink);
 	return () => subscribers.delete(sink);
 }
 
-function broadcast(type: string, payload: unknown = {}) {
-	const msg = `event: ${type}\ndata: ${JSON.stringify(payload)}\n\n`;
-	for (const sink of [...subscribers]) {
+function writeToSink(sink: Sink, data: string) {
+	try {
+		sink.write(data);
+	} catch {
 		try {
-			sink.write(msg);
-		} catch {
-			try {
-				sink.close();
-			} catch {}
-			subscribers.delete(sink);
-		}
+			sink.close();
+		} catch {}
+		subscribers.delete(sink);
 	}
+}
+
+function broadcastReaction(reaction: ReactionRecord) {
+	const payload = {
+		reaction: {
+			id: reaction.id,
+			file: reaction.file,
+			name: reaction.name,
+			url: reaction.url,
+		},
+		at: Date.now(),
+	};
+	const msg = `event: reaction\ndata: ${JSON.stringify(payload)}\n\n`;
+	for (const sink of [...subscribers]) {
+		writeToSink(sink, msg);
+	}
+}
+
+async function readReactions(force = false) {
+	if (!force && reactionsCache) return reactionsCache;
+	let entries: Dirent[];
+	try {
+		entries = await readdir(REACTIONS_DIR, { withFileTypes: true });
+	} catch {
+		throw error(500, "Failed to read reactions directory");
+	}
+	const reactions = entries
+		.filter(
+			(entry) =>
+				entry.isFile() && ALLOWED.has(path.extname(entry.name).toLowerCase()),
+		)
+		.map((entry) => {
+			const file = entry.name;
+			const id = file;
+			const name = file.replace(/\.[^.]+$/, "");
+			const url = `/reactions/${encodeURIComponent(file)}`;
+			return { id, file, name, url };
+		});
+	reactionsCache = reactions;
+	return reactions;
 }
 
 export const GET: RequestHandler = async ({ request, locals }) => {
@@ -48,7 +94,6 @@ export const GET: RequestHandler = async ({ request, locals }) => {
 	}
 
 	const accept = request.headers.get("accept") || "";
-	// Serve SSE when requested by EventSource; otherwise list reactions
 	if (accept.includes("text/event-stream")) {
 		const { readable, writable } = new TransformStream<Uint8Array>();
 		const writer = writable.getWriter();
@@ -72,7 +117,7 @@ export const GET: RequestHandler = async ({ request, locals }) => {
 			} catch {}
 		};
 
-		const sink = {
+		const sink: Sink = {
 			write: (data: string) => {
 				if (closed) return;
 				writer.write(encoder.encode(data)).catch(() => {
@@ -83,19 +128,10 @@ export const GET: RequestHandler = async ({ request, locals }) => {
 		};
 
 		unsubscribe = subscribe(sink);
-
-		// Open stream and ping
 		sink.write(": connected\n\n");
 		pingId = setInterval(() => sink.write("event: ping\ndata: {}\n\n"), 25000);
 
-		// Abort when client disconnects
-		request.signal.addEventListener(
-			"abort",
-			() => {
-				cleanup();
-			},
-			{ once: true },
-		);
+		request.signal.addEventListener("abort", () => cleanup(), { once: true });
 
 		return new Response(readable, {
 			headers: {
@@ -106,24 +142,7 @@ export const GET: RequestHandler = async ({ request, locals }) => {
 		});
 	}
 
-	// Otherwise return list of available reactions
-	let entries: Dirent[];
-	try {
-		entries = await readdir(REACTIONS_DIR, { withFileTypes: true });
-	} catch {
-		throw error(500, "Failed to read reactions directory");
-	}
-
-	const reactions = entries
-		.filter(
-			(d) => d.isFile() && ALLOWED.has(path.extname(d.name).toLowerCase()),
-		)
-		.map((d) => {
-			const file = d.name;
-			const url = `/reactions/${encodeURIComponent(file)}`;
-			const name = file.replace(/\.[^.]+$/, "");
-			return { name, url, file };
-		});
+	const reactions = await readReactions();
 	return json(
 		{ reactions },
 		{
@@ -138,25 +157,49 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!locals.user) {
 		throw error(401, "Unauthorized: You must be verified to send reactions.");
 	}
-	let data: unknown;
+
+	let body: unknown;
 	try {
-		data = await request.json();
+		body = await request.json();
 	} catch {
 		throw error(400, "Bad Request: Expected JSON body");
 	}
-	if (
-		!data ||
-		typeof data !== "object" ||
-		data === null ||
-		!("type" in data) ||
-		typeof (data as { type: unknown }).type !== "string"
-	) {
+
+	if (!body || typeof body !== "object") {
 		throw error(
 			400,
 			"Bad Request: body must be { type: string, payload?: unknown }",
 		);
 	}
-	const { type, payload } = data as { type: string; payload?: unknown };
-	broadcast(type, payload ?? {});
+
+	const { type, payload } = body as { type?: unknown; payload?: unknown };
+	if (type !== "reaction") {
+		throw error(400, "Bad Request: Unsupported reaction type");
+	}
+	if (!payload || typeof payload !== "object") {
+		throw error(400, "Bad Request: payload must be an object");
+	}
+
+	const id = (payload as { id?: unknown }).id;
+	if (typeof id !== "string" || id.length === 0) {
+		throw error(400, "Bad Request: payload.id must be a non-empty string");
+	}
+
+	let reactions = await readReactions();
+	let reaction = reactions.find((item) => item.id === id) ?? null;
+	if (!reaction) {
+		reactions = await readReactions(true);
+		reaction = reactions.find((item) => item.id === id) ?? null;
+	}
+	if (!reaction) {
+		throw error(404, "Unknown reaction");
+	}
+
+	const resolved = reaction;
+	reactionsCache = reactionsCache?.map((item) =>
+		item.id === resolved.id ? resolved : item,
+	) ?? [resolved];
+
+	broadcastReaction(resolved);
 	return json({ ok: true });
 };

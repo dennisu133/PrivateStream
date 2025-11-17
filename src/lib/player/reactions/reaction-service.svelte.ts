@@ -1,200 +1,145 @@
 const REACTIONS_ENDPOINT = "/api/reactions";
 
 export type ReactionItem = {
+	id: string;
 	name: string;
 	url: string;
-	file: string;
 };
 
-export type ReactionBroadcastPayload = {
-	url?: string;
-	name?: string;
-	at?: number;
+export type ReactionSignal = {
+	reaction: ReactionItem;
+	at: number;
+	origin: "remote" | "local";
 };
 
-type Listener = (payload: ReactionBroadcastPayload) => void;
+const listeners = new Set<(signal: ReactionSignal) => void>();
 
-let manifestCache: ReactionItem[] | null = null;
-let manifestPromise: Promise<ReactionItem[]> | null = null;
-let manifestError: Error | null = null;
-let thumbnailsPrefetched = false;
-
-const listeners = new Set<Listener>();
 let eventSource: EventSource | null = null;
-let eventSourceHandlers: { open: () => void; error: () => void } | null = null;
 let reconnectTimer: number | null = null;
-let backoffMs = 2000;
 
-const MAX_BACKOFF_MS = 30000;
+const RECONNECT_DELAY = 2500;
 
-function normalizeManifest(data: unknown): ReactionItem[] {
-	if (
-		data &&
-		typeof data === "object" &&
-		"reactions" in data &&
-		Array.isArray((data as { reactions: unknown }).reactions)
-	) {
-		const items = (data as { reactions: unknown[] }).reactions;
-		return items
-			.map((entry) => {
-				if (!entry || typeof entry !== "object") return null;
-				const name = String((entry as Record<string, unknown>).name ?? "");
-				const url = String((entry as Record<string, unknown>).url ?? "");
-				const file = String((entry as Record<string, unknown>).file ?? "");
-				if (!name || !url || !file) return null;
-				return { name, url, file };
-			})
-			.filter(Boolean) as ReactionItem[];
-	}
-	return [];
+function normalizeReaction(input: unknown) {
+	if (!input || typeof input !== "object") return null;
+	const raw = input as Record<string, unknown>;
+	const id = String(raw.id ?? raw.file ?? "");
+	const url = String(raw.url ?? "");
+	const name = String(raw.name ?? "") || id;
+	if (!id || !url) return null;
+	return { id, name, url } satisfies ReactionItem;
 }
 
-function prefetchThumbnails(list: ReactionItem[], limit = 12) {
-	if (typeof window === "undefined" || thumbnailsPrefetched) return;
-	const total = Math.min(limit, list.length);
-	for (let i = 0; i < total; i += 1) {
-		const img = new Image();
-		img.decoding = "async";
-		img.loading = "lazy";
-		img.src = list[i]?.url ?? "";
+function emit(signal: ReactionSignal) {
+	for (const listener of listeners) {
+		try {
+			listener(signal);
+		} catch (error) {
+			console.error("Reaction listener failed", error);
+		}
 	}
-	thumbnailsPrefetched = true;
 }
 
-async function requestManifest(): Promise<ReactionItem[]> {
-	const res = await fetch(REACTIONS_ENDPOINT, {
+async function fetchReactions() {
+	const response = await fetch(REACTIONS_ENDPOINT, {
 		method: "GET",
 		credentials: "same-origin",
 		headers: { Accept: "application/json" },
 	});
-	if (!res.ok) {
-		throw new Error(`Failed to load reactions (HTTP ${res.status})`);
+	if (!response.ok) {
+		throw new Error(`Failed to load reactions (HTTP ${response.status})`);
 	}
-	const data = await res.json();
-	const reactions = normalizeManifest(data);
-	manifestCache = reactions;
-	manifestError = null;
-	prefetchThumbnails(reactions);
-	return reactions;
-}
-
-export function getReactionManifest() {
-	return manifestCache;
-}
-
-export function getReactionManifestError() {
-	return manifestError;
-}
-
-export async function ensureReactionManifest(options?: { refresh?: boolean }) {
-	if (!options?.refresh) {
-		if (manifestCache) return manifestCache;
-		if (manifestPromise) return manifestPromise;
+	const data = await response.json();
+	if (!data || typeof data !== "object") return [] as ReactionItem[];
+	const raw = data as Record<string, unknown>;
+	if (!Array.isArray(raw.reactions)) return [] as ReactionItem[];
+	const list: ReactionItem[] = [];
+	for (const entry of raw.reactions) {
+		const reaction = normalizeReaction(entry);
+		if (reaction) list.push(reaction);
 	}
-	const promise = requestManifest().catch((error) => {
-		manifestCache = null;
-		manifestError =
-			error instanceof Error ? error : new Error("Failed to load reactions");
-		throw manifestError;
-	});
-	manifestPromise = promise;
-	try {
-		return await promise;
-	} finally {
-		manifestPromise = null;
-	}
+	return list;
 }
 
-function cleanupEventSource() {
+function teardownEventStream() {
 	if (!eventSource) return;
-	eventSource.removeEventListener("reaction", handleReactionEvent);
-	if (eventSourceHandlers) {
-		eventSource.removeEventListener("open", eventSourceHandlers.open);
-		eventSource.removeEventListener("error", eventSourceHandlers.error);
-	}
+	eventSource.removeEventListener("reaction", handleMessage);
+	eventSource.removeEventListener("error", handleError);
 	eventSource.close();
 	eventSource = null;
-	eventSourceHandlers = null;
 }
 
 function scheduleReconnect() {
 	if (typeof window === "undefined") return;
 	if (listeners.size === 0) return;
 	if (reconnectTimer) return;
-	const delay = Math.min(backoffMs, MAX_BACKOFF_MS);
 	reconnectTimer = window.setTimeout(() => {
 		reconnectTimer = null;
-		connectEventSource();
-	}, delay);
-	backoffMs = Math.min(Math.floor(backoffMs * 1.5), MAX_BACKOFF_MS);
+		if (listeners.size > 0) ensureEventStream();
+	}, RECONNECT_DELAY);
 }
 
-function handleReactionEvent(event: MessageEvent<string>) {
-	let payload: ReactionBroadcastPayload = {};
+function handleMessage(event: MessageEvent<string>) {
+	let payload: unknown;
 	try {
-		payload = JSON.parse(event.data ?? "{}") as ReactionBroadcastPayload;
+		payload = JSON.parse(event.data ?? "{}");
 	} catch {
 		payload = {};
 	}
-	for (const listener of listeners) {
-		try {
-			listener(payload);
-		} catch (err) {
-			console.error("Reaction listener failed", err);
-		}
+	if (!payload || typeof payload !== "object") return;
+	const raw = payload as { reaction?: unknown; at?: unknown };
+	const reaction = normalizeReaction(raw.reaction);
+	if (!reaction) return;
+	const at =
+		typeof raw.at === "number" && Number.isFinite(raw.at) ? raw.at : Date.now();
+	emit({ reaction, at, origin: "remote" });
+}
+
+function handleError() {
+	if (!eventSource) return;
+	if (eventSource.readyState === EventSource.CLOSED) {
+		teardownEventStream();
+		scheduleReconnect();
 	}
 }
 
-function connectEventSource() {
+function ensureEventStream() {
 	if (typeof window === "undefined") return;
 	if (eventSource || listeners.size === 0) return;
-
 	const source = new EventSource(REACTIONS_ENDPOINT, { withCredentials: true });
 	eventSource = source;
-	backoffMs = 2000;
-
-	const onOpen = () => {
-		backoffMs = 2000;
-	};
-	const onError = () => {
-		if (!eventSource) return;
-		if (eventSource.readyState === EventSource.CLOSED) {
-			cleanupEventSource();
-			scheduleReconnect();
-		}
-	};
-
-	eventSourceHandlers = { open: onOpen, error: onError };
-	source.addEventListener("open", onOpen);
-	source.addEventListener("error", onError);
-	source.addEventListener("reaction", handleReactionEvent);
+	source.addEventListener("reaction", handleMessage);
+	source.addEventListener("error", handleError);
 }
 
-export function subscribeToReactions(listener: Listener) {
+export async function loadReactions() {
+	return fetchReactions();
+}
+
+export function subscribeToReactions(
+	listener: (signal: ReactionSignal) => void,
+) {
 	listeners.add(listener);
-	connectEventSource();
+	if (listeners.size === 1) ensureEventStream();
 	return () => {
 		listeners.delete(listener);
 		if (listeners.size === 0) {
-			if (reconnectTimer) {
-				if (typeof window !== "undefined") {
-					window.clearTimeout(reconnectTimer);
-				}
+			teardownEventStream();
+			if (reconnectTimer && typeof window !== "undefined") {
+				window.clearTimeout(reconnectTimer);
 				reconnectTimer = null;
 			}
-			cleanupEventSource();
 		}
 	};
 }
 
-export async function triggerReaction(payload: ReactionBroadcastPayload) {
-	await fetch(REACTIONS_ENDPOINT, {
+export async function triggerReaction(reaction: ReactionItem) {
+	const response = await fetch(REACTIONS_ENDPOINT, {
 		method: "POST",
 		credentials: "same-origin",
 		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({
-			type: "reaction",
-			payload,
-		}),
+		body: JSON.stringify({ type: "reaction", payload: { id: reaction.id } }),
 	});
+	if (!response.ok) {
+		throw new Error(`Failed to send reaction (HTTP ${response.status})`);
+	}
 }

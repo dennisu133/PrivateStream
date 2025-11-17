@@ -48,7 +48,6 @@
 
   let selectedIndex = $state(0);
   let focusEl = $state<HTMLDivElement | null>(null);
-  let hasInitializedScroll = false;
   let gridWidth = $state(0);
   const clamp = (value: number, min: number, max: number) =>
     Math.max(min, Math.min(max, value));
@@ -68,10 +67,8 @@
     return Math.max(1, Math.min(total, columnCap));
   });
 
-  const getFallbackSize = () => playerSize ?? DEFAULT_PLAYER_SIZE;
-
   const computeLayout = () => {
-    const fallback = getFallbackSize();
+    const fallback = playerSize ?? DEFAULT_PLAYER_SIZE;
     const hostRect = host?.getBoundingClientRect() ?? null;
     const anchorRect = anchor?.getBoundingClientRect() ?? null;
     const viewportHeight =
@@ -185,13 +182,7 @@
     if (!grid) return;
     const buttons = grid.querySelectorAll<HTMLButtonElement>(".reaction-item");
     const target = buttons[selectedIndex];
-    if (!target) return;
-    if (!hasInitializedScroll) {
-      grid.scrollTop = 0;
-      hasInitializedScroll = true;
-      return;
-    }
-    target.scrollIntoView({ block: "nearest", inline: "nearest" });
+    target?.scrollIntoView({ block: "nearest", inline: "nearest" });
   });
 
   $effect(() => {
@@ -279,7 +270,7 @@
     onkeydown={handleKeydown}
     style={`grid-template-columns:repeat(${columns},minmax(0,1fr));`}
   >
-    {#each reactions as r, i (r.file)}
+    {#each reactions as r, i (r.id)}
       <button
         type="button"
         class={`reaction-item ${i === selectedIndex ? "is-selected" : ""}`}
