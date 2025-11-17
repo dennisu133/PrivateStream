@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { asset } from "$app/paths";
   import { Sticker } from "@lucide/svelte";
   import ReactionMenu from "./ReactionMenu.svelte";
   import {
+    getCachedReactions,
     loadReactions,
     subscribeToReactions,
     triggerReaction,
@@ -15,7 +17,6 @@
     player = null,
     stage = null,
     playerSize = null,
-    overlayImagePath = "/reactions/stare.jpg",
     overlayImages = null,
     overlayDuration = 1000,
     suspendVolumeKeys = null,
@@ -26,7 +27,6 @@
     player?: HTMLElement | null;
     stage?: HTMLElement | null;
     playerSize?: PlayerSize | null;
-    overlayImagePath?: string;
     overlayImages?: string[] | null;
     overlayDuration?: number;
     suspendVolumeKeys?: (() => () => void) | null;
@@ -40,7 +40,6 @@
   let isOpen = $state(false);
   let isLoading = $state(false);
   let loadError: string | null = $state(null);
-  let hasLoaded = $state(false);
   let reactions = $state<ReactionItem[]>([]);
 
   let menuLayout = $state({
@@ -63,8 +62,30 @@
 
   const prefetchedUrls = new Set<string>();
 
+  const toAssetUrl = (value: string) => {
+    if (!value) return value;
+    if (/^https?:\/\//.test(value)) return value;
+    let normalized = value;
+    if (normalized.startsWith("/static/")) {
+      normalized = normalized.slice("/static".length);
+    } else if (normalized.startsWith("static/")) {
+      normalized = normalized.slice("static".length);
+    }
+    if (!normalized.startsWith("/")) {
+      normalized = `/${normalized}`;
+    }
+    return asset(normalized);
+  };
+
+  const resolvedOverlayImages = $derived.by(() => {
+    if (!Array.isArray(overlayImages) || overlayImages.length === 0) return [];
+    return overlayImages
+      .map((src) => (typeof src === "string" ? toAssetUrl(src) : null))
+      .filter((src): src is string => typeof src === "string");
+  });
+
   const overlayImageUrl = $derived(
-    overlayReaction?.url ?? overlayImages?.[0] ?? overlayImagePath,
+    overlayReaction?.url ?? resolvedOverlayImages[0] ?? null,
   );
 
   const menuDisabled = $derived(
@@ -85,13 +106,18 @@
     list.forEach((item) => preloadImage(item.url));
 
   async function ensureReactions() {
-    if (isLoading || hasLoaded) return;
+    if (isLoading) return;
+    const cached = getCachedReactions();
+    if (cached && cached.length > 0) {
+      reactions = [...cached];
+      preloadReactions(cached);
+      return;
+    }
     isLoading = true;
     loadError = null;
     try {
       const list = await loadReactions();
       reactions = [...list];
-      hasLoaded = true;
       preloadReactions(list);
     } catch (error) {
       loadError =
@@ -110,7 +136,6 @@
       next[idx] = reaction;
       reactions = next;
     }
-    hasLoaded = true;
     preloadImage(reaction.url);
   }
 
@@ -219,6 +244,15 @@
   $effect(() => {
     if (typeof window === "undefined") return;
     ensureReactions();
+  });
+
+  $effect(() => {
+    const overlays = Array.isArray(resolvedOverlayImages)
+      ? resolvedOverlayImages
+      : [];
+    for (const src of overlays) {
+      preloadImage(src);
+    }
   });
 
   $effect(() => {
@@ -381,7 +415,7 @@
     style:height={`${overlaySizePx}px`}
     {@attach attachOverlay}
   >
-    <img src={overlayImageUrl} alt="Reaction" draggable="false" />
+    <img src={overlayImageUrl ?? ""} alt="Reaction" draggable="false" />
   </div>
 {/if}
 

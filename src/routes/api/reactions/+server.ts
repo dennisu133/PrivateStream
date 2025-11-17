@@ -1,21 +1,11 @@
-import type { Dirent } from "node:fs";
-import { readdir } from "node:fs/promises";
-import path from "node:path";
 import { error, json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 
-const ALLOWED = new Set([
-	".png",
-	".jpg",
-	".jpeg",
-	".gif",
-	".webp",
-	".avif",
-	".svg",
-]);
-
 const encoder = new TextEncoder();
-const REACTIONS_DIR = path.join(process.cwd(), "static", "reactions");
+
+const reactionModules = import.meta.glob("../../../../static/reactions/*", {
+	eager: true,
+}) as Record<string, { default: string }>;
 
 type ReactionRecord = {
 	id: string;
@@ -29,8 +19,18 @@ type Sink = {
 	close: () => void;
 };
 
+const reactions: ReactionRecord[] = Object.keys(reactionModules)
+	.map((path) => {
+		const file = path.split("/").pop() ?? "";
+		const name = file.replace(/\.[^.]+$/, "");
+		const url = `/reactions/${encodeURIComponent(file)}`;
+		return { id: file, file, name, url } satisfies ReactionRecord;
+	})
+	.sort((a, b) => a.name.localeCompare(b.name, "en"));
+
+const reactionsById = new Map(reactions.map((item) => [item.id, item]));
+
 const subscribers = new Set<Sink>();
-let reactionsCache: ReactionRecord[] | null = null;
 
 function subscribe(sink: Sink) {
 	subscribers.add(sink);
@@ -50,12 +50,7 @@ function writeToSink(sink: Sink, data: string) {
 
 function broadcastReaction(reaction: ReactionRecord) {
 	const payload = {
-		reaction: {
-			id: reaction.id,
-			file: reaction.file,
-			name: reaction.name,
-			url: reaction.url,
-		},
+		reaction,
 		at: Date.now(),
 	};
 	const msg = `event: reaction\ndata: ${JSON.stringify(payload)}\n\n`;
@@ -64,28 +59,8 @@ function broadcastReaction(reaction: ReactionRecord) {
 	}
 }
 
-async function readReactions(force = false) {
-	if (!force && reactionsCache) return reactionsCache;
-	let entries: Dirent[];
-	try {
-		entries = await readdir(REACTIONS_DIR, { withFileTypes: true });
-	} catch {
-		throw error(500, "Failed to read reactions directory");
-	}
-	const reactions = entries
-		.filter(
-			(entry) =>
-				entry.isFile() && ALLOWED.has(path.extname(entry.name).toLowerCase()),
-		)
-		.map((entry) => {
-			const file = entry.name;
-			const id = file;
-			const name = file.replace(/\.[^.]+$/, "");
-			const url = `/reactions/${encodeURIComponent(file)}`;
-			return { id, file, name, url };
-		});
-	reactionsCache = reactions;
-	return reactions;
+function getReactionById(id: string) {
+	return reactionsById.get(id) ?? null;
 }
 
 export const GET: RequestHandler = async ({ request, locals }) => {
@@ -142,7 +117,6 @@ export const GET: RequestHandler = async ({ request, locals }) => {
 		});
 	}
 
-	const reactions = await readReactions();
 	return json(
 		{ reactions },
 		{
@@ -185,21 +159,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		throw error(400, "Bad Request: payload.id must be a non-empty string");
 	}
 
-	let reactions = await readReactions();
-	let reaction = reactions.find((item) => item.id === id) ?? null;
-	if (!reaction) {
-		reactions = await readReactions(true);
-		reaction = reactions.find((item) => item.id === id) ?? null;
-	}
+	const reaction = getReactionById(id);
 	if (!reaction) {
 		throw error(404, "Unknown reaction");
 	}
 
-	const resolved = reaction;
-	reactionsCache = reactionsCache?.map((item) =>
-		item.id === resolved.id ? resolved : item,
-	) ?? [resolved];
-
-	broadcastReaction(resolved);
+	broadcastReaction(reaction);
 	return json({ ok: true });
 };

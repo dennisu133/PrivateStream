@@ -67,7 +67,6 @@ Before deploying you need to set some environment variables within a `.env` file
 If you want to deploy on a VPS you will need:
 
 - build/ directory
-- static/reactions/ directory
 - package.json
 - .env file
 - pm2_bun_workaround/ directory (if deploying with bun)

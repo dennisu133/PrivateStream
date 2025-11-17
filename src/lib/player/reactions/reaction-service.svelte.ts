@@ -17,6 +17,9 @@ const listeners = new Set<(signal: ReactionSignal) => void>();
 let eventSource: EventSource | null = null;
 let reconnectTimer: number | null = null;
 
+let manifest: ReactionItem[] | null = null;
+let manifestPromise: Promise<ReactionItem[]> | null = null;
+
 const RECONNECT_DELAY = 2500;
 
 function normalizeReaction(input: unknown) {
@@ -26,7 +29,19 @@ function normalizeReaction(input: unknown) {
 	const url = String(raw.url ?? "");
 	const name = String(raw.name ?? "") || id;
 	if (!id || !url) return null;
-	return { id, name, url } satisfies ReactionItem;
+	return { id, name, url } as ReactionItem;
+}
+
+function normalizeReactions(data: unknown) {
+	if (!data || typeof data !== "object") return [] as ReactionItem[];
+	const raw = data as Record<string, unknown>;
+	if (!Array.isArray(raw.reactions)) return [] as ReactionItem[];
+	const list: ReactionItem[] = [];
+	for (const entry of raw.reactions) {
+		const reaction = normalizeReaction(entry);
+		if (reaction) list.push(reaction);
+	}
+	return list;
 }
 
 function emit(signal: ReactionSignal) {
@@ -49,14 +64,8 @@ async function fetchReactions() {
 		throw new Error(`Failed to load reactions (HTTP ${response.status})`);
 	}
 	const data = await response.json();
-	if (!data || typeof data !== "object") return [] as ReactionItem[];
-	const raw = data as Record<string, unknown>;
-	if (!Array.isArray(raw.reactions)) return [] as ReactionItem[];
-	const list: ReactionItem[] = [];
-	for (const entry of raw.reactions) {
-		const reaction = normalizeReaction(entry);
-		if (reaction) list.push(reaction);
-	}
+	const list = normalizeReactions(data);
+	manifest = list;
 	return list;
 }
 
@@ -111,8 +120,29 @@ function ensureEventStream() {
 	source.addEventListener("error", handleError);
 }
 
-export async function loadReactions() {
-	return fetchReactions();
+export function getCachedReactions() {
+	return manifest;
+}
+
+export async function loadReactions(force = false) {
+	if (!force) {
+		if (manifest) return manifest;
+		if (manifestPromise) return manifestPromise;
+	}
+
+	const promise = fetchReactions().catch((error) => {
+		manifest = null;
+		throw error instanceof Error
+			? error
+			: new Error("Failed to load reactions");
+	});
+
+	manifestPromise = promise;
+	try {
+		return await promise;
+	} finally {
+		manifestPromise = null;
+	}
 }
 
 export function subscribeToReactions(
