@@ -2,7 +2,9 @@ import { error, json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 
 // Glob static assets to build manifest
-const modules = import.meta.glob("../../../../static/reactions/*", { eager: true });
+const modules = import.meta.glob("../../../../static/reactions/*", {
+	eager: true,
+});
 const reactions = Object.keys(modules).map((path) => {
 	const file = path.split("/").pop()!;
 	return {
@@ -44,8 +46,12 @@ export const GET: RequestHandler = async ({ request, locals }) => {
 	if (request.headers.get("accept")?.includes("text/event-stream")) {
 		return new Response(
 			new ReadableStream({
-				start: (c) => streams.add(c),
-				cancel: (c) => streams.delete(c),
+				start(c) {
+					streams.add(c);
+				},
+				cancel(c) {
+					streams.delete(c);
+				},
 			}),
 			{
 				headers: {
