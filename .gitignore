@@ -30,3 +30,6 @@ vite.config.ts.timestamp-*
 
 # Cursor
 .cursor
+
+# Reaction images
+static/reactions/*
