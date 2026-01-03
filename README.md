@@ -107,4 +107,3 @@ Currently there is a bug when running Sveltekit + bun + pm2. For more informatio
 
 - **[SRS](https://github.com/ossrs/srs):** For providing the fantastic framework that makes WebRTC relaying accessible and easy to implement.
 - **[OBS Studio](https://github.com/obsproject/obs-studio):** For being the gold standard in broadcasting and making the streaming source setup effortless.
-- **Gregory Bell** for the creation of [Web Neko](https://webneko.net/)
