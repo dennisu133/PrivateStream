@@ -1,1 +1,16 @@
 @import "tailwindcss";
+
+@layer base {
+	html {
+		@apply font-sans;
+	}
+	body {
+		@apply bg-linear-to-br from-zinc-900 to-zinc-950 text-zinc-100;
+	}
+}
+
+@layer components {
+	.player-button {
+		@apply h-8 w-8 cursor-pointer rounded-md bg-transparent outline-hidden transition-colors hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-hidden;
+	}
+}

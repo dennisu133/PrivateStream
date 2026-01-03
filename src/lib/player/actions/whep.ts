@@ -16,16 +16,10 @@ export type WhepController = {
 
 const WATCHDOG_INTERVAL_MS = 2000;
 
-export function startWhep(
-	videoEl: HTMLVideoElement,
-	opts: WhepOptions = {},
-): WhepController {
+export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}): WhepController {
 	const endpoint = opts.endpoint ?? "/api/whep";
 	const reconnectDelayMs = Math.max(250, opts.reconnectDelayMs ?? 1500);
-	const maxReconnectDelayMs = Math.max(
-		reconnectDelayMs,
-		opts.maxReconnectDelayMs ?? 30000,
-	);
+	const maxReconnectDelayMs = Math.max(reconnectDelayMs, opts.maxReconnectDelayMs ?? 30000);
 
 	let stopped = false;
 	let pc: RTCPeerConnection | null = null;
@@ -65,7 +59,7 @@ export function startWhep(
 		const res = await fetch(endpoint, {
 			method: "POST",
 			headers: { "Content-Type": "application/sdp" },
-			body: target.localDescription?.sdp ?? "",
+			body: target.localDescription?.sdp ?? ""
 		});
 		if (!res.ok) throw new Error(`WHEP HTTP ${res.status} ${res.statusText}`);
 		const answer = await res.text();
@@ -104,11 +98,7 @@ export function startWhep(
 				currentReconnectDelayMs = reconnectDelayMs;
 				return;
 			}
-			if (
-				state === "disconnected" ||
-				state === "failed" ||
-				state === "closed"
-			) {
+			if (state === "disconnected" || state === "failed" || state === "closed") {
 				setReceiving("idle");
 				scheduleReconnect();
 			}
@@ -118,10 +108,7 @@ export function startWhep(
 			await negotiate(localPc);
 		} catch (e) {
 			console.error("[WHEP] Connection negotiation failed", e);
-			currentReconnectDelayMs = Math.min(
-				maxReconnectDelayMs,
-				currentReconnectDelayMs * 2,
-			);
+			currentReconnectDelayMs = Math.min(maxReconnectDelayMs, currentReconnectDelayMs * 2);
 			scheduleReconnect();
 		}
 	};
@@ -157,10 +144,7 @@ export function startWhep(
 	};
 
 	void connect();
-	statsTimer = window.setInterval(
-		() => void checkStats(),
-		WATCHDOG_INTERVAL_MS,
-	);
+	statsTimer = window.setInterval(() => void checkStats(), WATCHDOG_INTERVAL_MS);
 
 	return {
 		get pc() {
@@ -188,6 +172,6 @@ export function startWhep(
 				}
 			} catch {}
 			videoEl.srcObject = null;
-		},
+		}
 	};
 }

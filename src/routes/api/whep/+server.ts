@@ -12,18 +12,11 @@ type CachedIp = { value: string; expiresAt: number } | null;
 
 let cachedServerIp: CachedIp = null;
 
-function withTimeout(
-	input: RequestInfo | URL,
-	init: RequestInit | undefined,
-	ms: number,
-) {
+function withTimeout(input: RequestInfo | URL, init: RequestInit | undefined, ms: number) {
 	const controller = new AbortController();
 	const t = setTimeout(() => controller.abort(), ms);
 	return {
-		fetch: () =>
-			fetch(input, { ...init, signal: controller.signal }).finally(() =>
-				clearTimeout(t),
-			),
+		fetch: () => fetch(input, { ...init, signal: controller.signal }).finally(() => clearTimeout(t))
 	};
 }
 
@@ -33,11 +26,7 @@ async function resolveServerIp() {
 		return cachedServerIp.value;
 	}
 
-	const { fetch: timedFetch } = withTimeout(
-		IPIFY_URL,
-		undefined,
-		IPIFY_TIMEOUT_MS,
-	);
+	const { fetch: timedFetch } = withTimeout(IPIFY_URL, undefined, IPIFY_TIMEOUT_MS);
 	const res = await timedFetch();
 	if (!res.ok) {
 		throw error(res.status, "Failed to resolve server IP");
@@ -72,9 +61,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		{
 			method: "POST",
 			headers: { "Content-Type": "application/sdp" },
-			body: offerSdp,
+			body: offerSdp
 		},
-		FORWARD_TIMEOUT_MS,
+		FORWARD_TIMEOUT_MS
 	);
 
 	const res = await _fetch();
@@ -88,6 +77,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	console.log("[WHEP] Proxy <- 200 answer");
 	return new Response(answerSdp, {
 		status: 200,
-		headers: { "Content-Type": "application/sdp" },
+		headers: { "Content-Type": "application/sdp" }
 	});
 };

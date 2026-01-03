@@ -23,14 +23,14 @@ export function loadReactions() {
 	if (manifest) return Promise.resolve(manifest);
 	if (manifestPromise) return manifestPromise;
 	return (manifestPromise = fetch(ENDPOINT, {
-		headers: { Accept: "application/json" },
+		headers: { Accept: "application/json" }
 	})
 		.then((r) => r.json())
 		.then((data) => {
 			manifest = (data?.reactions || []).map((r: any) => ({
 				id: String(r.id || r.file),
 				name: String(r.name || r.id),
-				url: String(r.url),
+				url: String(r.url)
 			}));
 			return manifest!;
 		})
@@ -78,6 +78,6 @@ export async function triggerReaction(reaction: ReactionItem) {
 	await fetch(ENDPOINT, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ type: "reaction", payload: { id: reaction.id } }),
+		body: JSON.stringify({ type: "reaction", payload: { id: reaction.id } })
 	});
 }

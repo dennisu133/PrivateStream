@@ -21,7 +21,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 			description,
 			themeColor,
 			image,
-			url,
-		},
+			url
+		}
 	};
 };

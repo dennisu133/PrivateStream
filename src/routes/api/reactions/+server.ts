@@ -3,14 +3,14 @@ import type { RequestHandler } from "./$types";
 
 // Glob static assets to build manifest
 const modules = import.meta.glob("../../../../static/reactions/*", {
-	eager: true,
+	eager: true
 });
 const reactions = Object.keys(modules).map((path) => {
 	const file = path.split("/").pop()!;
 	return {
 		id: file,
 		name: file.replace(/\.[^.]+$/, ""),
-		url: `/reactions/${encodeURIComponent(file)}`,
+		url: `/reactions/${encodeURIComponent(file)}`
 	};
 });
 
@@ -51,15 +51,15 @@ export const GET: RequestHandler = async ({ request, locals }) => {
 				},
 				cancel(c) {
 					streams.delete(c);
-				},
+				}
 			}),
 			{
 				headers: {
 					"Content-Type": "text/event-stream",
 					"Cache-Control": "no-cache",
-					Connection: "keep-alive",
-				},
-			},
+					Connection: "keep-alive"
+				}
+			}
 		);
 	}
 

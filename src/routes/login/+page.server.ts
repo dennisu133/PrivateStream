@@ -47,10 +47,10 @@ export const actions: Actions = {
 			httpOnly: true,
 			sameSite: "lax",
 			secure: process.env.NODE_ENV === "production",
-			maxAge: 60 * 60 * 24 * 7, // 1 week
+			maxAge: 60 * 60 * 24 * 7 // 1 week
 		});
 
 		// Redirect to the stream page
 		redirect(303, "/");
-	},
+	}
 };
