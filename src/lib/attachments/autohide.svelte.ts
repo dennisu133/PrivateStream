@@ -131,13 +131,17 @@ export function autohide(options: AutohideOptions = {}): Attachment<HTMLElement>
 				monitorTarget.addEventListener(event, handlePointerActivity, { passive: true });
 			});
 			monitorTarget.addEventListener("pointerleave", handlePointerLeave);
+			// Also listen for hold/release/show on monitor target (events dispatched there won't bubble down)
+			monitorTarget.addEventListener("autohide:hold", handleHold);
+			monitorTarget.addEventListener("autohide:release", handleRelease);
+			monitorTarget.addEventListener("autohide:show", handleShow);
 		}
 
 		// Setup element listeners for hover state
 		element.addEventListener("pointerenter", handleControlsEnter);
 		element.addEventListener("pointerleave", handleControlsLeave);
 
-		// Setup custom event listeners for hold/release/show
+		// Setup custom event listeners for hold/release/show (for events bubbling up from children)
 		element.addEventListener("autohide:hold", handleHold);
 		element.addEventListener("autohide:release", handleRelease);
 		element.addEventListener("autohide:show", handleShow);
@@ -155,6 +159,9 @@ export function autohide(options: AutohideOptions = {}): Attachment<HTMLElement>
 					monitorTarget.removeEventListener(event, handlePointerActivity);
 				});
 				monitorTarget.removeEventListener("pointerleave", handlePointerLeave);
+				monitorTarget.removeEventListener("autohide:hold", handleHold);
+				monitorTarget.removeEventListener("autohide:release", handleRelease);
+				monitorTarget.removeEventListener("autohide:show", handleShow);
 			}
 
 			element.removeEventListener("pointerenter", handleControlsEnter);

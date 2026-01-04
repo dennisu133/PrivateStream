@@ -86,7 +86,7 @@
 				/>
 			{/if}
 
-			<VolumeControls video={videoEl} />
+			<VolumeControls video={videoEl} disableGlobalInput={reactionSystem?.isOpen() ?? false} />
 			<FullscreenToggle target={frameEl ?? videoEl ?? playerEl} />
 		</PlayerButtons>
 	</div>
