@@ -2,6 +2,9 @@
 	import { onMount } from "svelte";
 	import PlayerButtons from "./PlayerButtons.svelte";
 	import StatusIndicator from "./StatusIndicator.svelte";
+	import ReactionButton from "./reactions/ReactionButton.svelte";
+	import VolumeControls from "./controls/VolumeControls.svelte";
+	import FullscreenToggle from "./controls/FullscreenToggle.svelte";
 	import { startWhep } from "./actions/whep";
 	import { resizable } from "$lib/attachments/resizable.svelte";
 	import {
@@ -63,18 +66,24 @@
 	aria-busy={streamStatus !== "live"}
 	{@attach resizable()}
 >
-	<div class="relative aspect-video border border-white/10 bg-black" bind:this={frameEl}>
+	<div
+		id="player-frame"
+		class="relative aspect-video border border-white/10 bg-black"
+		bind:this={frameEl}
+	>
 		<video bind:this={videoEl} aria-label="Video stream" autoplay muted playsinline>
 			Your browser does not support video playback.
 		</video>
 
-		<PlayerButtons
-			player={playerEl}
-			frame={frameEl}
-			video={videoEl}
-			{playerSize}
-			{enableFunFeatures}
-		/>
+		<PlayerButtons frame={frameEl}>
+			{#if enableFunFeatures}
+				<ReactionButton player={playerEl} frame={frameEl} {playerSize} />
+			{/if}
+
+			<VolumeControls video={videoEl} />
+
+			<FullscreenToggle target={frameEl ?? videoEl ?? playerEl} />
+		</PlayerButtons>
 	</div>
 
 	<figcaption

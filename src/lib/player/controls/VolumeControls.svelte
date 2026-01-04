@@ -1,26 +1,27 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { Volume, Volume1, Volume2, VolumeX } from "@lucide/svelte";
+	import Button from "./Button.svelte";
 
 	const STEP = 0.05;
 	const DEFAULT_VOLUME = 0.5;
 
 	let {
 		video = null,
-		storageKey = "player.volume",
-		onShowControls = () => {},
-		volumeKeysSuspended = false
+		storageKey = "player.volume"
 	}: {
 		video?: HTMLVideoElement | null;
 		storageKey?: string;
-		onShowControls?: () => void;
-		volumeKeysSuspended?: boolean;
 	} = $props();
 
 	let volume = $state(0);
 	let isMuted = $state(true);
 	let lastNonZeroVolume = $state(DEFAULT_VOLUME);
-	let volumeKeysBlocked = $state(false);
+	let containerEl = $state<HTMLElement | null>(null);
+
+	const dispatchShow = () => {
+		containerEl?.dispatchEvent(new CustomEvent("autohide:show", { bubbles: true }));
+	};
 
 	const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
@@ -76,12 +77,12 @@
 			applyVideoState();
 			persistState();
 		}
-		onShowControls?.();
+		dispatchShow();
 	};
 
 	const adjustVolume = (delta: number) => {
 		setVolumeNormalized(volume + delta);
-		onShowControls?.();
+		dispatchShow();
 	};
 
 	const handleInput = (event: Event) => {
@@ -90,19 +91,16 @@
 		const next = parseFloat(target.value);
 		if (!Number.isNaN(next)) {
 			setVolumeNormalized(next);
-			onShowControls?.();
+			dispatchShow();
 		}
 	};
 
 	const handleKeydown = (event: KeyboardEvent) => {
-		if (volumeKeysBlocked) return;
 		const targetEl = event.target as HTMLElement | null;
-		if (
-			targetEl &&
-			["input", "textarea", "select"].includes((targetEl.tagName || "").toLowerCase())
-		) {
+		if (targetEl?.matches("input, textarea, select, [contenteditable]")) {
 			return;
 		}
+
 		if (event.key === "ArrowUp") {
 			event.preventDefault();
 			adjustVolume(STEP);
@@ -148,21 +146,16 @@
 	});
 
 	$effect(applyVideoState);
-	$effect(() => {
-		volumeKeysBlocked = volumeKeysSuspended;
-	});
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="flex items-center gap-2.5">
-	<button
-		type="button"
-		class="player-button"
-		aria-label={isMuted ? "Unmute" : "Mute"}
+<div class="flex items-center gap-2.5" bind:this={containerEl}>
+	<Button
+		label={isMuted ? "Unmute" : "Mute"}
 		title={(isMuted ? "Unmute" : "Mute") + " (m)"}
+		pressed={isMuted}
 		onclick={toggleMute}
-		aria-pressed={isMuted}
 	>
 		{#if isMuted}
 			<VolumeX size={24} strokeWidth={2} aria-hidden="true" />
@@ -173,7 +166,7 @@
 		{:else}
 			<Volume2 size={24} strokeWidth={2} aria-hidden="true" />
 		{/if}
-	</button>
+	</Button>
 
 	<input
 		class="volume-slider w-30 accent-white"

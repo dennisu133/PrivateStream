@@ -1,83 +1,81 @@
 <script lang="ts">
 	import { Maximize, Minimize } from "@lucide/svelte";
+	import Button from "./Button.svelte";
 
 	let {
-		target = null,
-		onShowControls = () => {}
+		target = null
 	}: {
 		target?: HTMLElement | null;
-		onShowControls?: () => void;
 	} = $props();
 
 	let isFullscreen = $state(false);
+	let buttonEl = $state<HTMLElement | null>(null);
+
+	const dispatchShow = () => {
+		buttonEl?.dispatchEvent(new CustomEvent("autohide:show", { bubbles: true }));
+	};
 
 	const syncFullscreen = () => {
 		if (typeof document === "undefined") {
 			isFullscreen = false;
 			return;
 		}
-		const el = target;
-		if (!el) {
-			isFullscreen = false;
-			return;
-		}
-		isFullscreen = document.fullscreenElement === el;
+		isFullscreen = document.fullscreenElement === target;
 	};
 
 	const toggleFullscreen = async () => {
-		const el = target;
-		if (!el || typeof document === "undefined") return;
+		if (!target || typeof document === "undefined") return;
+
 		try {
-			if (document.fullscreenElement === el) {
+			if (document.fullscreenElement === target) {
 				await document.exitFullscreen();
 			} else {
-				await el.requestFullscreen();
+				await target.requestFullscreen();
 			}
 		} catch (error) {
 			console.error("Fullscreen error:", error);
 		} finally {
-			onShowControls?.();
+			dispatchShow();
 			syncFullscreen();
 		}
 	};
 
 	const handleKeydown = (event: KeyboardEvent) => {
 		if (event.key !== "f" && event.key !== "F") return;
+
 		const targetEl = event.target as HTMLElement | null;
-		if (
-			targetEl &&
-			["input", "textarea", "select"].includes((targetEl.tagName || "").toLowerCase())
-		) {
+		if (targetEl?.matches("input, textarea, select, [contenteditable]")) {
 			return;
 		}
+
 		if (!target) return;
 		event.preventDefault();
 		toggleFullscreen();
 	};
 
 	$effect(() => {
-		const currentTarget = target;
 		syncFullscreen();
+
 		if (typeof document === "undefined") return;
-		const handler = () => syncFullscreen();
-		document.addEventListener("fullscreenchange", handler);
-		return () => document.removeEventListener("fullscreenchange", handler);
+
+		document.addEventListener("fullscreenchange", syncFullscreen);
+		return () => document.removeEventListener("fullscreenchange", syncFullscreen);
 	});
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
 
-<button
-	type="button"
-	class="player-button"
-	aria-label={isFullscreen ? "Exit full screen" : "Full screen"}
-	title={(isFullscreen ? "Exit full screen" : "Full screen") + " (f)"}
-	aria-pressed={isFullscreen}
-	onclick={toggleFullscreen}
->
-	{#if !isFullscreen}
-		<Maximize size={24} strokeWidth={2} aria-hidden="true" />
-	{:else}
-		<Minimize size={24} strokeWidth={2} aria-hidden="true" />
-	{/if}
-</button>
+<span bind:this={buttonEl}>
+	<Button
+		label={isFullscreen ? "Exit full screen" : "Full screen"}
+		title={(isFullscreen ? "Exit full screen" : "Full screen") + " (f)"}
+		pressed={isFullscreen}
+		onclick={toggleFullscreen}
+	>
+		{#if isFullscreen}
+			<Minimize size={24} strokeWidth={2} aria-hidden="true" />
+		{:else}
+			<Maximize size={24} strokeWidth={2} aria-hidden="true" />
+		{/if}
+	</Button>
+</span>
