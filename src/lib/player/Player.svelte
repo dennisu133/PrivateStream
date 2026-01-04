@@ -67,7 +67,7 @@
 			autoplay
 			muted
 			playsinline
-			class="aspect-video h-full w-full object-cover"
+			class="aspect-video h-full w-full"
 		>
 			Your browser does not support video playback.
 		</video>
