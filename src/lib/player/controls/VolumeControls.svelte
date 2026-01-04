@@ -4,6 +4,7 @@
 	import Button from "./Button.svelte";
 
 	const STEP = 0.05;
+	const SCROLL_STEP = 0.02;
 	const DEFAULT_VOLUME = 0.5;
 
 	let {
@@ -19,6 +20,9 @@
 	let lastNonZeroVolume = $state(DEFAULT_VOLUME);
 	let containerEl = $state<HTMLElement | null>(null);
 
+	const volumePercent = $derived(Math.round(volume * 100));
+	const volumeText = $derived(isMuted ? "Muted" : `${volumePercent}%`);
+
 	const dispatchShow = () => {
 		containerEl?.dispatchEvent(new CustomEvent("autohide:show", { bubbles: true }));
 	};
@@ -26,10 +30,9 @@
 	const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
 	const applyVideoState = () => {
-		const el = video;
-		if (!el) return;
-		el.volume = volume;
-		el.muted = isMuted;
+		if (!video) return;
+		video.volume = volume;
+		video.muted = isMuted;
 	};
 
 	const persistState = () => {
@@ -95,21 +98,32 @@
 		}
 	};
 
+	const handleWheel = (event: WheelEvent) => {
+		// Scroll up = increase volume, scroll down = decrease
+		const delta = event.deltaY < 0 ? SCROLL_STEP : -SCROLL_STEP;
+		adjustVolume(delta);
+	};
+
 	const handleKeydown = (event: KeyboardEvent) => {
 		const targetEl = event.target as HTMLElement | null;
 		if (targetEl?.matches("input, textarea, select, [contenteditable]")) {
 			return;
 		}
 
-		if (event.key === "ArrowUp") {
-			event.preventDefault();
-			adjustVolume(STEP);
-		} else if (event.key === "ArrowDown") {
-			event.preventDefault();
-			adjustVolume(-STEP);
-		} else if (event.key === "m" || event.key === "M") {
-			event.preventDefault();
-			toggleMute();
+		switch (event.key) {
+			case "ArrowUp":
+				event.preventDefault();
+				adjustVolume(STEP);
+				break;
+			case "ArrowDown":
+				event.preventDefault();
+				adjustVolume(-STEP);
+				break;
+			case "m":
+			case "M":
+				event.preventDefault();
+				toggleMute();
+				break;
 		}
 	};
 
@@ -133,7 +147,7 @@
 			} else {
 				lastNonZeroVolume = DEFAULT_VOLUME;
 			}
-			// Always start muted to satisfy autoplay policies, regardless of stored state
+			// Always start muted to satisfy autoplay policies
 			isMuted = true;
 		} catch (error) {
 			console.warn("Failed to restore player volume", error);
@@ -144,13 +158,16 @@
 		restoreState();
 		applyVideoState();
 	});
-
-	$effect(applyVideoState);
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} onwheel={handleWheel} />
 
-<div class="flex items-center gap-2.5" bind:this={containerEl}>
+<div
+	class="flex items-center gap-2.5"
+	bind:this={containerEl}
+	role="group"
+	aria-label="Volume controls"
+>
 	<Button
 		label={isMuted ? "Unmute" : "Mute"}
 		title={(isMuted ? "Unmute" : "Mute") + " (m)"}
@@ -176,10 +193,11 @@
 		step={STEP}
 		value={volume}
 		oninput={handleInput}
-		title="Adjust volume (↑/↓)"
+		title="Adjust volume (↑/↓/scroll)"
 		aria-label="Volume"
-		aria-valuemin="0"
-		aria-valuemax="1"
-		aria-valuenow={volume}
+		aria-valuemin={0}
+		aria-valuemax={100}
+		aria-valuenow={volumePercent}
+		aria-valuetext={volumeText}
 	/>
 </div>

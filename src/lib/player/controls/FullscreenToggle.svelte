@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from "svelte";
 	import { Maximize, Minimize } from "@lucide/svelte";
 	import Button from "./Button.svelte";
 
@@ -9,22 +10,18 @@
 	} = $props();
 
 	let isFullscreen = $state(false);
-	let buttonEl = $state<HTMLElement | null>(null);
+	let containerEl = $state<HTMLElement | null>(null);
 
 	const dispatchShow = () => {
-		buttonEl?.dispatchEvent(new CustomEvent("autohide:show", { bubbles: true }));
+		containerEl?.dispatchEvent(new CustomEvent("autohide:show", { bubbles: true }));
 	};
 
 	const syncFullscreen = () => {
-		if (typeof document === "undefined") {
-			isFullscreen = false;
-			return;
-		}
 		isFullscreen = document.fullscreenElement === target;
 	};
 
 	const toggleFullscreen = async () => {
-		if (!target || typeof document === "undefined") return;
+		if (!target) return;
 
 		try {
 			if (document.fullscreenElement === target) {
@@ -36,7 +33,6 @@
 			console.error("Fullscreen error:", error);
 		} finally {
 			dispatchShow();
-			syncFullscreen();
 		}
 	};
 
@@ -53,11 +49,8 @@
 		toggleFullscreen();
 	};
 
-	$effect(() => {
+	onMount(() => {
 		syncFullscreen();
-
-		if (typeof document === "undefined") return;
-
 		document.addEventListener("fullscreenchange", syncFullscreen);
 		return () => document.removeEventListener("fullscreenchange", syncFullscreen);
 	});
@@ -65,7 +58,7 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<span bind:this={buttonEl}>
+<span bind:this={containerEl}>
 	<Button
 		label={isFullscreen ? "Exit full screen" : "Full screen"}
 		title={(isFullscreen ? "Exit full screen" : "Full screen") + " (f)"}
