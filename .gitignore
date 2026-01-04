@@ -32,4 +32,4 @@ vite.config.ts.timestamp-*
 .cursor
 
 # Reaction images
-static/reactions/*
+/src/lib/assets/reactions/*
