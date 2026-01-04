@@ -4,8 +4,7 @@ import { verifySessionToken } from "$lib/server/auth";
 
 // Check .env file exists on startup
 if (!existsSync(".env")) {
-	console.error("Missing .env file. Please create .env file with required configuration.");
-	process.exit(1);
+	console.warn("Missing .env file. Make sure SITE_PASSWORD_HASH and SRS_WHEP_URL are set.");
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
