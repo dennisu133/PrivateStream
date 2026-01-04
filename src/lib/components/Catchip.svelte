@@ -29,6 +29,13 @@
 		onclick={handleGifClick}
 		class="fixed right-4 bottom-4 z-1 cursor-pointer bg-transparent hover:scale-110"
 	>
-		<img src="/catchip.gif" alt="cat eating chips" class="h-auto w-30 opacity-80" />
+		<img
+			fetchpriority="high"
+			src="/catchip.gif"
+			alt="cat eating chips"
+			class="opacity-80"
+			width="128"
+			height="128"
+		/>
 	</button>
 {/if}

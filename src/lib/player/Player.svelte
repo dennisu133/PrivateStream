@@ -49,7 +49,7 @@
 
 <figure
 	bind:this={playerEl}
-	class="mx-2 flex w-[70vw] max-w-[min(90vw,calc((90vh-6rem)*16/9))] min-w-[350px] flex-col gap-3 border border-white/10 bg-white/5 p-4 shadow-2xl shadow-black/40"
+	class="flex w-[70vw] max-w-[min(90vw,calc((90vh-6rem)*16/9))] min-w-[350px] flex-col gap-3 border border-white/10 bg-white/5 p-4 shadow-2xl shadow-black/40"
 	aria-label="Live stream player"
 	aria-busy={streamStatus !== "live"}
 	{@attach resizable()}
@@ -59,7 +59,14 @@
 		class="@container-[size] relative aspect-video border border-white/10 bg-black"
 		bind:this={frameEl}
 	>
-		<video bind:this={videoEl} aria-label="Video stream" autoplay muted playsinline>
+		<video
+			bind:this={videoEl}
+			aria-label="Video stream"
+			autoplay
+			muted
+			playsinline
+			class="aspect-video h-full w-full object-cover"
+		>
 			Your browser does not support video playback.
 		</video>
 
