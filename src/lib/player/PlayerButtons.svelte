@@ -7,13 +7,13 @@
 
 	let {
 		player = null,
-		stage = null,
+		frame = null,
 		video = null,
 		enableFunFeatures = true,
 		playerSize = null
 	}: {
 		player?: HTMLElement | null;
-		stage?: HTMLElement | null;
+		frame?: HTMLElement | null;
 		video?: HTMLVideoElement | null;
 		enableFunFeatures?: boolean;
 		playerSize?: { width: number; height: number } | null;
@@ -107,7 +107,7 @@
 	bind:this={rootEl}
 	data-visible={controlsVisible}
 	{@attach (node) => {
-		const target = stage ?? (node.parentElement as HTMLElement | null) ?? player;
+		const target = frame ?? (node.parentElement as HTMLElement | null) ?? player;
 		if (!target) return;
 		return attachPointerSensors(target);
 	}}
@@ -121,7 +121,7 @@
 		{#if enableFunFeatures}
 			<ReactionButton
 				{player}
-				{stage}
+				{frame}
 				{playerSize}
 				{suspendVolumeKeys}
 				onRevealControls={showControlsTemporarily}
@@ -138,6 +138,6 @@
 
 		<VolumeControls {video} onShowControls={showControlsTemporarily} {volumeKeysSuspended} />
 
-		<FullscreenToggle target={stage ?? video ?? player} onShowControls={showControlsTemporarily} />
+		<FullscreenToggle target={frame ?? video ?? player} onShowControls={showControlsTemporarily} />
 	</div>
 </div>

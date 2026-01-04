@@ -13,7 +13,7 @@
 
 	let {
 		player = null,
-		stage = null,
+		frame = null,
 		playerSize = null,
 		overlayImages = null,
 		overlayDuration = 1000,
@@ -23,7 +23,7 @@
 		onMenuClose
 	}: {
 		player?: HTMLElement | null;
-		stage?: HTMLElement | null;
+		frame?: HTMLElement | null;
 		playerSize?: { width: number; height: number } | null;
 		overlayImages?: string[] | null;
 		overlayDuration?: number;
@@ -33,7 +33,7 @@
 		onMenuClose?: () => void;
 	} = $props();
 
-	const host = $derived(stage ?? player);
+	const host = $derived(frame ?? player);
 	let isOpen = $state(false);
 	let reactions = $state<ReactionItem[]>([]);
 	let activeOverlay = $state<ReactionItem | null>(null);

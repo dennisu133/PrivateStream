@@ -1,9 +1,9 @@
-export type ReceivingState = "pending" | "live" | "idle";
+import type { ConnectionState, ReceivingState } from "$lib/types";
 
 export type WhepOptions = {
 	endpoint?: string;
-	onStateChange?: (state: RTCPeerConnectionState) => void;
-	onReceivingChange?: (receiving: ReceivingState) => void;
+	onStateChange?: (state: ConnectionState) => void;
+	onReceivingChange?: (state: ReceivingState) => void;
 	reconnectDelayMs?: number;
 	maxReconnectDelayMs?: number;
 };
