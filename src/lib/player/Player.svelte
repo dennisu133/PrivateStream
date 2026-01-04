@@ -15,6 +15,7 @@
 		type ReceivingState
 	} from "$lib/types";
 	import type { WhepController } from "./actions/whep";
+	import poster from "$lib/assets/poster.webp";
 
 	let { endpoint = "/api/whep", enableFunFeatures = true } = $props();
 
@@ -62,6 +63,7 @@
 		<video
 			bind:this={videoEl}
 			aria-label="Video stream"
+			{poster}
 			autoplay
 			muted
 			playsinline

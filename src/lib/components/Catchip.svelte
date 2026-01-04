@@ -3,6 +3,7 @@
 
 <script lang="ts">
 	import confetti from "canvas-confetti";
+	import catchipGif from "$lib/assets/catchip.gif";
 
 	let isGifVisible = $state(true);
 
@@ -31,7 +32,7 @@
 	>
 		<img
 			fetchpriority="high"
-			src="/catchip.gif"
+			src={catchipGif}
 			alt="cat eating chips"
 			class="opacity-80"
 			width="128"
