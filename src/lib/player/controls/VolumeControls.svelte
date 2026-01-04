@@ -9,10 +9,12 @@
 
 	let {
 		video = null,
-		storageKey = "player.volume"
+		storageKey = "player.volume",
+		disableGlobalInput = false
 	}: {
 		video?: HTMLVideoElement | null;
 		storageKey?: string;
+		disableGlobalInput?: boolean;
 	} = $props();
 
 	let volume = $state(0);
@@ -99,12 +101,15 @@
 	};
 
 	const handleWheel = (event: WheelEvent) => {
+		if (disableGlobalInput) return;
 		// Scroll up = increase volume, scroll down = decrease
 		const delta = event.deltaY < 0 ? SCROLL_STEP : -SCROLL_STEP;
 		adjustVolume(delta);
 	};
 
 	const handleKeydown = (event: KeyboardEvent) => {
+		if (disableGlobalInput) return;
+
 		const targetEl = event.target as HTMLElement | null;
 		if (targetEl?.matches("input, textarea, select, [contenteditable]")) {
 			return;

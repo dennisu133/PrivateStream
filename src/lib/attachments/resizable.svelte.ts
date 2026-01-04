@@ -1,15 +1,6 @@
 import type { Attachment } from "svelte/attachments";
 
 export type ResizableOptions = {
-	aspectRatio?: number;
-	/** Minimum width as percentage of viewport width (0-100) */
-	minWidthVw?: number;
-	/** Maximum width as percentage of viewport width (0-100) */
-	maxWidthVw?: number;
-	/** Padding from viewport edges as percentage of viewport width */
-	viewportPaddingVw?: number;
-	/** Height reserved for chrome/UI elements as percentage of viewport height */
-	chromeHeightVh?: number;
 	desktopQuery?: string;
 };
 
@@ -38,31 +29,22 @@ const CURSOR_MAP: Record<NonNullable<Edge>, string> = {
 };
 
 /**
- * Creates a resizable attachment that can be applied to any element.
- * Uses CSS-first approach with JavaScript only for drag calculations.
- * All size constraints are viewport-relative for consistent scaling across display densities.
- *
- * The attachment sets the following data attributes on the element:
- * - `data-resizable`: "true" when resizing is enabled (desktop viewport)
- * - `data-resizing`: "true" while actively dragging to resize
- * - `data-resize-edge`: the edge being hovered/dragged (for cursor styling)
+ * Creates a resizable attachment that reads size constraints from CSS.
+ * Set min-width and max-width on the element to control bounds.
+ * Aspect ratio is calculated dynamically from the element's dimensions.
  *
  * @example
  * ```svelte
- * <div {@attach resizable({ aspectRatio: 16/9, minWidthVw: 30, maxWidthVw: 90 })}>
+ * <div
+ *   class="min-w-80 max-w-[90vw] w-[70vw]"
+ *   {@attach resizable()}
+ * >
  *   Content
  * </div>
  * ```
  */
 export function resizable(options: ResizableOptions = {}): Attachment<HTMLElement> {
-	const {
-		aspectRatio = 16 / 9,
-		minWidthVw = 30,
-		maxWidthVw = 90,
-		viewportPaddingVw = 3,
-		chromeHeightVh = 10,
-		desktopQuery = "(min-width: 900px)"
-	} = options;
+	const { desktopQuery = "(min-width: 900px)" } = options;
 
 	return (element) => {
 		let isResizable = false;
@@ -70,36 +52,38 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 		let dragStartX = 0;
 		let dragStartY = 0;
 		let dragStartWidth = 0;
+		let dragAspectRatio = 1;
 
 		const isFullscreen = () => document.fullscreenElement !== null;
 
-		/** Convert vw percentage to pixels */
-		const vwToPx = (vw: number): number => (vw / 100) * window.innerWidth;
-
-		/** Convert vh percentage to pixels */
-		const vhToPx = (vh: number): number => (vh / 100) * window.innerHeight;
-
-		const computeMaxWidth = (): number => {
-			const vw = window.innerWidth;
-			const vh = window.innerHeight;
-
-			// Max from viewport width constraint
-			const maxFromWidth = vw * (1 - (viewportPaddingVw * 2) / 100);
-
-			// Max from viewport height constraint (accounting for aspect ratio)
-			const availableHeight = vh * (1 - (viewportPaddingVw * 2) / 100 - chromeHeightVh / 100);
-			const maxFromHeight = availableHeight * aspectRatio;
-
-			// Clamp between min/max vw settings and viewport constraints
-			const minPx = vwToPx(minWidthVw);
-			const maxPx = vwToPx(maxWidthVw);
-
-			return Math.min(maxPx, maxFromWidth, maxFromHeight, Math.max(minPx, maxFromWidth));
+		/** Get current aspect ratio from element dimensions */
+		const getAspectRatio = () => {
+			const rect = element.getBoundingClientRect();
+			return rect.height > 0 ? rect.width / rect.height : 1;
 		};
 
-		const clampWidth = (value: number): number => {
-			const minPx = vwToPx(minWidthVw);
-			return Math.min(Math.max(value, minPx), computeMaxWidth());
+		/** Get min/max constraints from CSS computed styles */
+		const getConstraints = () => {
+			const style = getComputedStyle(element);
+			const minWidth = parseFloat(style.minWidth) || 0;
+			// maxWidth can be "none" which parses to NaN
+			let maxWidth = parseFloat(style.maxWidth);
+			if (!Number.isFinite(maxWidth)) maxWidth = Infinity;
+
+			// Also constrain by viewport height (prevent overflow)
+			const availableHeight = window.innerHeight * 0.9;
+			const aspectRatio = getAspectRatio();
+			const maxFromHeight = availableHeight * aspectRatio;
+
+			return {
+				min: minWidth,
+				max: Math.min(maxWidth, maxFromHeight)
+			};
+		};
+
+		const clampWidth = (value: number) => {
+			const { min, max } = getConstraints();
+			return Math.min(Math.max(value, min), max);
 		};
 
 		const setDataAttr = (name: string, value: string | null) => {
@@ -162,6 +146,7 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 			dragStartX = e.clientX;
 			dragStartY = e.clientY;
 			dragStartWidth = element.getBoundingClientRect().width;
+			dragAspectRatio = getAspectRatio();
 
 			setDataAttr("resizing", "true");
 			element.style.touchAction = "none";
@@ -190,10 +175,10 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 						newWidth = dragStartWidth - deltaX;
 						break;
 					case "bottom":
-						newWidth = dragStartWidth + deltaY * aspectRatio;
+						newWidth = dragStartWidth + deltaY * dragAspectRatio;
 						break;
 					case "top":
-						newWidth = dragStartWidth - deltaY * aspectRatio;
+						newWidth = dragStartWidth - deltaY * dragAspectRatio;
 						break;
 					default:
 						return;
@@ -212,6 +197,9 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 			activeEdge = null;
 			setDataAttr("resizing", null);
 			element.style.touchAction = "";
+
+			// Update cursor based on current pointer position
+			updateCursor(getEdgeFromPosition(e.clientX, e.clientY));
 		};
 
 		const handlePointerLeave = () => {

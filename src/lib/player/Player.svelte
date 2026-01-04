@@ -3,6 +3,7 @@
 	import PlayerButtons from "./PlayerButtons.svelte";
 	import StatusIndicator from "./StatusIndicator.svelte";
 	import ReactionButton from "./reactions/ReactionButton.svelte";
+	import ReactionSystem from "./reactions/ReactionSystem.svelte";
 	import VolumeControls from "./controls/VolumeControls.svelte";
 	import FullscreenToggle from "./controls/FullscreenToggle.svelte";
 	import { startWhep } from "./actions/whep";
@@ -23,8 +24,9 @@
 	let playerEl = $state<HTMLElement | null>(null);
 	let frameEl = $state<HTMLDivElement | null>(null);
 	let videoEl = $state<HTMLVideoElement | null>(null);
-	let playerSize = $state({ width: 0, height: 0 });
 	let controller: WhepController | null = null;
+
+	let reactionSystem = $state<ReturnType<typeof ReactionSystem> | null>(null);
 
 	const connectionIndicator = $derived(getConnectionIndicator(connectionState));
 	const streamIndicator = $derived(getStreamIndicator(streamStatus));
@@ -38,50 +40,44 @@
 			});
 		}
 
-		const target = frameEl ?? playerEl;
-		let resizeObserver: ResizeObserver | null = null;
-
-		if (target) {
-			resizeObserver = new ResizeObserver(([entry]) => {
-				if (!entry) return;
-				const { width, height } = entry.contentRect;
-				playerSize.width = Math.round(width);
-				playerSize.height = Math.round(height);
-			});
-			resizeObserver.observe(target);
-		}
-
 		return () => {
 			controller?.destroy();
 			controller = null;
-			resizeObserver?.disconnect();
 		};
 	});
 </script>
 
 <figure
 	bind:this={playerEl}
-	class="flex w-[70vw] flex-col gap-3 border border-white/10 bg-white/5 p-4 shadow-2xl shadow-black/40"
+	class="mx-2 flex w-[70vw] max-w-[min(90vw,calc((90vh-6rem)*16/9))] min-w-[350px] flex-col gap-3 border border-white/10 bg-white/5 p-4 shadow-2xl shadow-black/40"
 	aria-label="Live stream player"
 	aria-busy={streamStatus !== "live"}
 	{@attach resizable()}
 >
 	<div
 		id="player-frame"
-		class="relative aspect-video border border-white/10 bg-black"
+		class="@container-[size] relative aspect-video border border-white/10 bg-black"
 		bind:this={frameEl}
 	>
 		<video bind:this={videoEl} aria-label="Video stream" autoplay muted playsinline>
 			Your browser does not support video playback.
 		</video>
 
+		{#if enableFunFeatures}
+			<ReactionSystem bind:this={reactionSystem} {frameEl} />
+		{/if}
+
 		<PlayerButtons frame={frameEl}>
-			{#if enableFunFeatures}
-				<ReactionButton player={playerEl} frame={frameEl} {playerSize} />
+			{#if enableFunFeatures && reactionSystem}
+				<ReactionButton
+					isOpen={reactionSystem.isOpen()}
+					onToggle={() => reactionSystem?.toggle()}
+					onInteract={() => reactionSystem?.interact()}
+					onMount={(el) => reactionSystem?.setToggleButtonEl(el)}
+				/>
 			{/if}
 
 			<VolumeControls video={videoEl} />
-
 			<FullscreenToggle target={frameEl ?? videoEl ?? playerEl} />
 		</PlayerButtons>
 	</div>

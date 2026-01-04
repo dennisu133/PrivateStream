@@ -11,9 +11,17 @@ const config = {
 	kit: {
 		adapter: adapter(),
 		csrf: {
-			trustedOrigins: trustedOrigins,
+			trustedOrigins: trustedOrigins
 		},
+		experimental: {
+			remoteFunctions: true
+		}
 	},
+	compilerOptions: {
+		experimental: {
+			async: true
+		}
+	}
 };
 
 export default config;

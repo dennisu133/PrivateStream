@@ -2,6 +2,7 @@
 
 @layer base {
 	html {
+		color-scheme: dark;
 		@apply font-sans;
 	}
 	body {
