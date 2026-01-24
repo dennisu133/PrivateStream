@@ -1,14 +1,28 @@
 <script lang="ts">
 	import "../app.css";
 	import favicon from "$lib/assets/favicon.ico";
+	import { page } from "$app/state";
 
 	let { children } = $props();
 
 	const title = import.meta.env.VITE_META_TITLE_PUBLIC || "PrivateStream";
 	const description =
 		import.meta.env.VITE_META_DESCRIPTION || "Private livestream viewer for friend groups.";
-	const color = import.meta.env.VITE_META_COLOR || "#09090b";
+	const color = import.meta.env.VITE_META_COLOR || "#E4B583";
 	const image = import.meta.env.VITE_META_IMAGE || "/meta.gif";
+
+	const isBoring = $derived(page.url.pathname === "/boring");
+
+	// Generate dust particles with varied properties
+	const particles = Array.from({ length: 18 }, (_, i) => ({
+		id: i,
+		left: `${Math.random() * 100}%`,
+		size: `${1 + Math.random() * 2.5}px`,
+		duration: `${12 + Math.random() * 20}s`,
+		delay: `${-Math.random() * 20}s`,
+		opacity: 0.15 + Math.random() * 0.35,
+		alt: i % 3 === 0
+	}));
 </script>
 
 <svelte:head>
@@ -22,6 +36,39 @@
 	<meta property="og:image" content={image} />
 </svelte:head>
 
-<main class="flex h-screen w-screen items-center justify-center">
-	{@render children?.()}
-</main>
+<div
+	class="relative h-screen w-screen overflow-hidden"
+	class:film-grain={!isBoring}
+	class:theater-vignette={!isBoring}
+>
+	{#if !isBoring}
+		<!-- Ambient screen glow - projected onto the "ceiling/walls" -->
+		<div
+			class="screen-glow pointer-events-none absolute top-[10%] left-1/2 h-[60%] w-[50%] -translate-x-1/2 rounded-full opacity-50 blur-[120px]"
+			style="background: radial-gradient(ellipse, oklch(0.4 0.08 250 / 0.3) 0%, oklch(0.28 0.06 250 / 0.1) 50%, transparent 70%);"
+			aria-hidden="true"
+		></div>
+
+		<!-- Projector dust particles -->
+		<div class="pointer-events-none absolute inset-0 z-10" aria-hidden="true">
+			{#each particles as p (p.id)}
+				<div
+					class="dust-particle"
+					style="
+						left: {p.left};
+						width: {p.size};
+						height: {p.size};
+						animation-duration: {p.duration};
+						animation-delay: {p.delay};
+						opacity: {p.opacity};
+						{p.alt ? 'animation-name: dust-float-alt;' : ''}
+					"
+				></div>
+			{/each}
+		</div>
+	{/if}
+
+	<main class="relative z-55 flex h-full w-full items-center justify-center">
+		{@render children?.()}
+	</main>
+</div>

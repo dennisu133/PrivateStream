@@ -28,15 +28,15 @@
 	<button
 		type="button"
 		onclick={handleGifClick}
-		class="fixed right-4 bottom-4 z-1 cursor-pointer bg-transparent hover:scale-110"
+		class="fixed right-5 bottom-5 z-60 cursor-pointer bg-transparent transition-transform duration-300 ease-cinema hover:scale-110"
 	>
 		<img
 			fetchpriority="high"
 			src={catchipGif}
 			alt="cat eating chips"
-			class="opacity-80"
-			width="128"
-			height="128"
+			class="opacity-70 drop-shadow-[0_0_8px_oklch(0_0_0/0.5)]"
+			width="112"
+			height="112"
 		/>
 	</button>
 {/if}

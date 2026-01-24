@@ -10,22 +10,29 @@
 	} = $props();
 </script>
 
-<span class="inline-flex items-center gap-2 font-semibold tracking-wide uppercase">
+<span
+	class="inline-flex items-center gap-2.5 font-mono text-xs font-light tracking-widest uppercase"
+>
 	<span
-		class="inline-flex h-2.5 w-2.5 items-center justify-center rounded-full
+		class="relative inline-flex h-2 w-2 items-center justify-center rounded-full
 			{state === 'ok'
-			? 'bg-green-400 shadow-[0_0_8px_var(--color-green-400)]'
+			? 'status-live bg-emerald-400 text-emerald-400'
 			: state === 'warn'
-				? 'bg-red-500 shadow-[0_0_8px_var(--color-red-500)]'
-				: 'border border-white/30 bg-transparent'}"
+				? 'bg-red-400 text-red-400'
+				: 'border border-white/20 bg-transparent'}"
 		aria-hidden="true"
 	>
 		{#if state === "pending"}
 			<span
-				class="h-2 w-2 animate-spin rounded-full border border-white/20 border-t-white"
+				class="h-1.5 w-1.5 animate-spin rounded-full border border-white/15 border-t-theater-gold"
 				aria-hidden="true"
 			></span>
 		{/if}
 	</span>
-	<span>{label}</span>
+	<span
+		class="text-theater-muted
+		{state === 'ok' ? 'text-emerald-400/70' : state === 'warn' ? 'text-red-400/70' : ''}"
+	>
+		{label}
+	</span>
 </span>

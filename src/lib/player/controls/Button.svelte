@@ -22,7 +22,7 @@
 
 <button
 	type="button"
-	class="grid h-8 w-8 cursor-pointer place-items-center rounded-md bg-transparent outline-hidden transition-colors duration-150 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+	class="grid h-8 w-8 cursor-pointer place-items-center rounded-sm bg-transparent text-white/60 outline-hidden transition-all duration-200 ease-cinema hover:bg-white/8 hover:text-theater-gold focus-visible:ring-1 focus-visible:ring-theater-gold/40 focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
 	aria-label={label}
 	aria-pressed={pressed}
 	{title}
