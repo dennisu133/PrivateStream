@@ -11,10 +11,10 @@
 </script>
 
 <span
-	class="inline-flex items-center gap-2.5 font-mono text-xs font-light tracking-widest uppercase"
+	class="inline-flex items-center gap-2.5 font-mono text-xs leading-none font-light tracking-widest uppercase"
 >
 	<span
-		class="relative inline-flex h-2 w-2 items-center justify-center rounded-full
+		class="relative inline-flex h-2 w-2 shrink-0 items-center justify-center rounded-full
 			{state === 'ok'
 			? 'status-live bg-emerald-400 text-emerald-400'
 			: state === 'warn'
