@@ -7,14 +7,15 @@
 	import FullscreenToggle from "./controls/FullscreenToggle.svelte";
 	import { startWhep } from "./actions/whep";
 	import { resizable } from "$lib/attachments/resizable.svelte";
-	import type { ConnectionState, ReceivingState } from "$lib/types";
+	import {
+		getStreamStatus,
+		setConnectionState,
+		setStreamStatus
+	} from "$lib/state/connection.svelte";
 	import type { WhepController } from "./actions/whep";
 	import poster from "$lib/assets/poster.webp";
 
 	let { endpoint = "/api/whep", enableFunFeatures = true } = $props();
-
-	let connectionState = $state<ConnectionState>("new");
-	let streamStatus = $state<ReceivingState>("pending");
 
 	let frameEl = $state<HTMLDivElement | null>(null);
 	let videoEl = $state<HTMLVideoElement | null>(null);
@@ -22,22 +23,14 @@
 
 	let reactionSystem = $state<ReturnType<typeof ReactionSystem> | null>(null);
 
-	const isLive = $derived(streamStatus === "live");
-
-	export function getConnectionState() {
-		return connectionState;
-	}
-
-	export function getStreamStatus() {
-		return streamStatus;
-	}
+	const isLive = $derived(getStreamStatus() === "live");
 
 	onMount(() => {
 		if (endpoint && videoEl) {
 			controller = startWhep(videoEl, {
 				endpoint,
-				onStateChange: (s) => (connectionState = s),
-				onReceivingChange: (s) => (streamStatus = s)
+				onStateChange: (s) => setConnectionState(s),
+				onReceivingChange: (s) => setStreamStatus(s)
 			});
 		}
 
@@ -52,7 +45,7 @@
 <div
 	class="relative w-[72vw] max-w-[min(90vw,calc((82vh-4rem)*16/9))] min-w-[350px] p-3"
 	aria-label="Live stream player"
-	aria-busy={streamStatus !== "live"}
+	aria-busy={!isLive}
 	{@attach resizable()}
 >
 	<!-- Ambient glow behind the screen -->

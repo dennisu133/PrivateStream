@@ -1,22 +1,10 @@
 <script lang="ts">
 	import StatusIndicator from "$lib/player/StatusIndicator.svelte";
-	import {
-		getConnectionIndicator,
-		getStreamIndicator,
-		type ConnectionState,
-		type ReceivingState
-	} from "$lib/types";
+	import { getConnectionIndicator, getStreamIndicator } from "$lib/types";
+	import { getConnectionState, getStreamStatus } from "$lib/state/connection.svelte";
 
-	let {
-		connectionState,
-		streamStatus
-	}: {
-		connectionState: ConnectionState;
-		streamStatus: ReceivingState;
-	} = $props();
-
-	const connectionIndicator = $derived(getConnectionIndicator(connectionState));
-	const streamIndicator = $derived(getStreamIndicator(streamStatus));
+	const connectionIndicator = $derived(getConnectionIndicator(getConnectionState()));
+	const streamIndicator = $derived(getStreamIndicator(getStreamStatus()));
 </script>
 
 <div
