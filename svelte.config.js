@@ -15,9 +15,6 @@ const config = {
 
 		csrf: {
 			trustedOrigins: trustedOrigins
-		},
-		experimental: {
-			remoteFunctions: true
 		}
 	},
 	compilerOptions: {

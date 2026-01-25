@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fade } from "svelte/transition";
-	import type { Reaction } from "$lib/reactions.remote";
+	import type { Reaction } from "./reactions.svelte";
 
 	let { reaction }: { reaction: Reaction | null } = $props();
 </script>

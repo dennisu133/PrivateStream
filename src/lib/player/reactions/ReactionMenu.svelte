@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { onMount } from "svelte";
-	import { getReactions, triggerReaction, type Reaction } from "$lib/reactions.remote";
+	import { reactions, triggerReaction, type Reaction } from "./reactions.svelte";
 
 	const COLUMNS = 3;
 
@@ -20,16 +19,14 @@
 	let containerEl = $state<HTMLDivElement | null>(null);
 	let menuEl = $state<HTMLDivElement | null>(null);
 
-	// Get reactions from remote function
-	const reactionsQuery = getReactions();
-	const reactions = $derived(reactionsQuery.current ?? []);
-
+	// Focus menu when it becomes available
 	$effect(() => {
-		if (reactions.length > 0) {
-			menuEl?.focus();
+		if (menuEl) {
+			menuEl.focus();
 		}
 	});
 
+	// Keep selection in bounds and scroll into view
 	$effect(() => {
 		if (selectedIndex >= reactions.length) selectedIndex = 0;
 		const target = menuEl?.children[selectedIndex] as HTMLElement;
@@ -40,7 +37,7 @@
 		onSelect(reaction);
 
 		try {
-			await triggerReaction({ id: reaction.id });
+			await triggerReaction(reaction.id);
 		} catch (error) {
 			console.error("Failed to trigger reaction:", error);
 		}
@@ -111,10 +108,9 @@
 		}
 	}
 
-	onMount(() => {
-		// Use capture phase to catch clicks before they bubble
+	// Register click outside handler (capture phase to catch clicks before they bubble)
+	$effect(() => {
 		document.addEventListener("click", handleClickOutside, true);
-
 		return () => {
 			document.removeEventListener("click", handleClickOutside, true);
 		};
@@ -127,13 +123,7 @@
 	bind:this={containerEl}
 	class="flex h-full w-full flex-col overflow-hidden rounded-md bg-black/80 shadow-lg backdrop-blur-sm"
 >
-	{#if reactionsQuery.loading}
-		<div class="flex h-full items-center justify-center p-4 text-sm text-white/70">Loading...</div>
-	{:else if reactionsQuery.error}
-		<div class="flex h-full items-center justify-center p-4 text-sm text-red-400">
-			Failed to load reactions
-		</div>
-	{:else if reactions.length > 0}
+	{#if reactions.length > 0}
 		<div
 			role="listbox"
 			tabindex="0"

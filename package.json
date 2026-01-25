@@ -34,7 +34,6 @@
 	"dependencies": {
 		"@lucide/svelte": "^0.553.0",
 		"bcrypt": "^6.0.0",
-		"canvas-confetti": "^1.9.3",
-		"valibot": "^1.2.0"
+		"canvas-confetti": "^1.9.3"
 	}
 }

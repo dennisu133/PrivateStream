@@ -2,8 +2,12 @@
 	import { onMount } from "svelte";
 	import ReactionMenu from "./ReactionMenu.svelte";
 	import ReactionOverlay from "./ReactionOverlay.svelte";
-	import { getReactions, type Reaction } from "$lib/reactions.remote";
-	import { subscribeToReactions, type ReactionEvent } from "$lib/reactions-client";
+	import {
+		reactions,
+		subscribeToReactions,
+		type Reaction,
+		type ReactionEvent
+	} from "./reactions.svelte";
 
 	const OVERLAY_DURATION = 1500;
 
@@ -20,9 +24,6 @@
 	// Overlay state
 	let activeReaction = $state<Reaction | null>(null);
 	let overlayTimer: ReturnType<typeof setTimeout> | null = null;
-
-	// Get reactions for preloading
-	const reactionsQuery = getReactions();
 
 	function dispatchAutohide(event: string) {
 		frameEl?.dispatchEvent(new CustomEvent(event, { bubbles: true }));
@@ -83,11 +84,9 @@
 		const unsubscribe = subscribeToReactions(handleRemoteReaction);
 
 		// Preload reaction images
-		if (reactionsQuery.current) {
-			for (const reaction of reactionsQuery.current) {
-				const img = new Image();
-				img.src = reaction.url;
-			}
+		for (const reaction of reactions) {
+			const img = new Image();
+			img.src = reaction.url;
 		}
 
 		return () => {
