@@ -40,9 +40,9 @@ Since the goal is achieving the lowest latency possible there are specific OBS s
 - Tune: zerolatency
 - x264 options: bframes=0
 
-### Optional: Using Nginx Proxy Manager as a reverse Proxy
+### HTTPS reverse proxy
 
-[Nginx-Proxy-Manager](https://nginxproxymanager.com/) is a great reverse proxy that can route your incoming traffic to the appropriate destination. This is mandatory if you want to host multiple services under a single IP. You want to route the traffic to the machine where **this Sveltekit application is running**.
+[Nginx-Proxy-Manager](https://nginxproxymanager.com/) is a convenient way to terminate HTTPS and route incoming traffic to the machine where **this SvelteKit application is running**. Production authentication cookies are `Secure`, so internet-facing deployments must use HTTPS.
 
 Create a proxy host with the following settings and set your SSL certificate:
 
@@ -56,13 +56,13 @@ Create a proxy host with the following settings and set your SSL certificate:
 
 Install the dependencies using a node package manager of your choice, e.g. `bun install`. Keep in mind that the scripts inside [package.json](/package.json) are hardcoded for [bun](https://bun.com/). You will have to change them if you use anything else.
 
-If you want to adjust the existing code you can start up a development server using `bun run dev`. The stream will be captured this way as well.
+If you want to adjust the existing code you can start up a development server using `bun run dev`. The stream will be captured this way as well. The development server binds to `127.0.0.1` by default and should not be exposed directly to a network.
 
-If you are using Nginx Proxy Manager I recommend setting an Access List when developing to avoid streaming a test stream to the public.
+If remote development is unavoidable, use a VPN or a TLS-protected reverse proxy with an independent Access List. You can explicitly opt in to a network listener with `bun run dev -- --host 0.0.0.0`.
 
 ## Deployment
 
-Before deploying you need to set some environment variables within a `.env` file and trusted CORS origins. Once you are done you can build and deploy this project by using `bun run build`. This will create a production-ready [Node](https://nodejs.org/en/about) environment.
+Before deploying you need to set some environment variables within a `.env` file and trusted CSRF origins. Once you are done you can build and deploy this project by using `bun run build`. This will create a production-ready [Node](https://nodejs.org/en/about) environment.
 
 If you want to deploy on a VPS you will need:
 
@@ -77,19 +77,44 @@ _Node alternative: `node --env-file=.env build/index.js` (Requires Node 20.6.0 o
 
 ### Environment Variables
 
-Simply rename the existing .env.example and put in your own data. Since we don't want to store the password in plaintext (even in an .env file) we use hashes. [bcrypt](https://en.wikipedia.org/wiki/Bcrypt) provides a simple hashing algorithm and you can use the provided [hash-password.js](tools/hash-password.js) (or any online tool) to create a hash.
+Copy `.env.example` to `.env` and fill in your own values. Never commit `.env`.
 
-Because raw bcrypht hashes are sometimes difficult to parse we additionally wrap it inside [base64](https://en.wikipedia.org/wiki/Base64) to make sure the hash is always parsed correctly.
+Generate the bcrypt password verifier using a hidden prompt so the password does not appear in shell history or process listings:
 
-### CSRF trusted origins
+```sh
+bun tools/hash-password.js
+```
 
-This is an additional security feature that can be disabled inside [svelte.config.js](/svelte.config.js).
+Because raw bcrypt hashes are sometimes difficult to parse, the script additionally wraps the hash in [base64](https://en.wikipedia.org/wiki/Base64).
 
-Sveltekit offers a built-in protection against Cross-Site Request Forgery (CSRF) attacks. We need to set trusted origins (or disable it) so submissions like the login form work correctly. To set them please do the following:
+Sessions use a separate high-entropy signing secret. Generate it with:
 
-1. Navigate to the `csrf/` directory.
-2. Rename `csrf-origins.example.js` to `csrf-origins.js`.
-3. Open the `csrf-origins.js` and replace the placeholder domains with your own. Refer to the examples within.
+```sh
+bun tools/generate-session-secret.js
+```
+
+Store the result as `SESSION_SECRET`. Rotating it invalidates every existing session but does not change the stream password.
+
+Set `ORIGIN` to the one public HTTPS origin from which viewers access the app. This avoids origin ambiguity across Cloudflare and a reverse proxy:
+
+```sh
+ORIGIN=https://stream.example.com
+```
+
+### Reverse proxy client addresses
+
+Login throttling has both a global budget and a per-client budget. When the Bun server is behind one trusted reverse proxy, configure:
+
+```sh
+PROTOCOL_HEADER=x-forwarded-proto
+HOST_HEADER=x-forwarded-host
+ADDRESS_HEADER=x-forwarded-for
+XFF_DEPTH=1
+```
+
+Put these values in `.env` if you use them. Do not trust forwarded headers when clients can connect directly to the Bun port; firewall that port so only the reverse proxy can reach it. Adjust `XFF_DEPTH` if more than one trusted proxy is in front of the app.
+
+For a Cloudflare-proxied domain, `ADDRESS_HEADER=cf-connecting-ip` is simpler than counting the Cloudflare and Nginx hops, provided the Bun origin is reachable only through those trusted proxies.
 
 ### PM2
 

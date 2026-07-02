@@ -1,17 +1,44 @@
-import { existsSync } from "node:fs";
+import { env } from "$env/dynamic/private";
+import { dev } from "$app/environment";
 import type { Handle } from "@sveltejs/kit";
-import { verifySessionToken } from "$lib/server/auth";
+import { hasValidSessionSecret, SESSION_COOKIE_NAME, verifySessionToken } from "$lib/server/auth";
 
-// Check .env file exists on startup
-if (!existsSync(".env")) {
-	console.warn("Missing .env file. Make sure SITE_PASSWORD_HASH and SRS_WHEP_URL are set.");
+if (!env.SITE_PASSWORD_HASH || !hasValidSessionSecret()) {
+	console.warn(
+		"Authentication is not configured. Set SITE_PASSWORD_HASH and a base64 SESSION_SECRET of at least 32 bytes."
+	);
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
-	const session = event.cookies.get("session");
+	const session = event.cookies.get(SESSION_COOKIE_NAME);
 	const isValid = verifySessionToken(session);
 	event.locals.user = isValid ? { authenticated: true } : null;
 
 	const response = await resolve(event);
+
+	// `no-referrer` turns the Origin header into `null` for basic form POSTs,
+	// which causes SvelteKit's CSRF protection to reject the login action.
+	response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+	response.headers.set("X-Content-Type-Options", "nosniff");
+	response.headers.set("X-Frame-Options", "DENY");
+	response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+	response.headers.set(
+		"Permissions-Policy",
+		"camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+	);
+
+	if (!dev) {
+		response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+	}
+
+	const routeId = event.route.id ?? "";
+	if (
+		routeId.includes("(protected)") ||
+		event.url.pathname === "/login" ||
+		event.url.pathname.startsWith("/api/")
+	) {
+		response.headers.set("Cache-Control", "private, no-store");
+	}
+
 	return response;
 };
