@@ -12,7 +12,7 @@ node_modules
 /debug.log
 
 # Private configuration
-/src/lib/server/csrf-origins.js
+/csrf/csrf-origins.js
 
 # Misc
 .DS_Store
