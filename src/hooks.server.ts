@@ -3,16 +3,26 @@ import { dev } from "$app/environment";
 import type { Handle } from "@sveltejs/kit";
 import { hasValidSessionSecret, SESSION_COOKIE_NAME, verifySessionToken } from "$lib/server/auth";
 
-if (!env.SITE_PASSWORD_HASH || !hasValidSessionSecret()) {
+const authDisabled = env.DANGEROUSLY_DISABLE_AUTH === "true";
+
+if (authDisabled) {
+	console.warn(
+		"⚠ DANGEROUSLY_DISABLE_AUTH is set: the password gate is OFF and every visitor is treated as logged in. Never use this in production."
+	);
+} else if (!env.SITE_PASSWORD_HASH || !hasValidSessionSecret()) {
 	console.warn(
 		"Authentication is not configured. Set SITE_PASSWORD_HASH and a base64 SESSION_SECRET of at least 32 bytes."
 	);
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
-	const session = event.cookies.get(SESSION_COOKIE_NAME);
-	const isValid = verifySessionToken(session);
-	event.locals.user = isValid ? { authenticated: true } : null;
+	if (authDisabled) {
+		event.locals.user = { authenticated: true };
+	} else {
+		const session = event.cookies.get(SESSION_COOKIE_NAME);
+		const isValid = verifySessionToken(session);
+		event.locals.user = isValid ? { authenticated: true } : null;
+	}
 
 	const response = await resolve(event);
 
