@@ -64,7 +64,7 @@
 
 <!-- Cinema screen -->
 <div
-	class="relative w-[72vw] max-w-[min(90vw,calc((82vh-4rem)*16/9))] min-w-[350px] p-3"
+	class="relative w-[72vw] max-w-[min(90vw,calc((82vh-4rem)*16/9))] min-w-80 p-0 min-[448px]:p-3"
 	aria-label="Live stream player"
 	aria-busy={!isLive}
 	{@attach resizable()}
