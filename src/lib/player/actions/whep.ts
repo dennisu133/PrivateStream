@@ -28,6 +28,7 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}): Wh
 	let receiving: ReceivingState = "pending";
 	let last = { bytes: 0, updatedAt: 0 };
 	let currentReconnectDelayMs = reconnectDelayMs;
+	let sessionUrl: string | null = null;
 
 	console.log("[WHEP] Starting WHEP connection");
 
@@ -36,6 +37,24 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}): Wh
 		receiving = next;
 		opts.onReceivingChange?.(receiving);
 	};
+
+	// Tear down the current session on SRS (fire-and-forget). Without this,
+	// every reconnect leaves a zombie session behind until SRS times it out.
+	const deleteSession = () => {
+		const url = sessionUrl;
+		sessionUrl = null;
+		// Only same-origin proxy paths issued by our own backend are used.
+		if (!url || !url.startsWith("/")) return;
+		console.log("[WHEP] Deleting session", url);
+		fetch(url, { method: "DELETE", keepalive: true }).catch(() => {});
+	};
+
+	// `keepalive` lets the DELETE survive the page being closed. Skip bfcache
+	// suspensions (`persisted`), where the page may resume with its connection.
+	const onPageHide = (e: PageTransitionEvent) => {
+		if (!e.persisted) deleteSession();
+	};
+	window.addEventListener("pagehide", onPageHide);
 
 	const clearReconnect = () => {
 		if (reconnectTimer !== null) {
@@ -62,6 +81,7 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}): Wh
 			body: target.localDescription?.sdp ?? ""
 		});
 		if (!res.ok) throw new Error(`WHEP HTTP ${res.status} ${res.statusText}`);
+		sessionUrl = res.headers.get("Location");
 		const answer = await res.text();
 		await target.setRemoteDescription({ type: "answer", sdp: answer });
 		console.log("[WHEP] Connection negotiation successful");
@@ -70,6 +90,7 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}): Wh
 	const connect = async () => {
 		if (stopped) return;
 		clearReconnect();
+		deleteSession();
 		last = { bytes: 0, updatedAt: 0 };
 		setReceiving("pending");
 		try {
@@ -155,7 +176,9 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}): Wh
 			if (stopped) return;
 			stopped = true;
 			console.warn("[WHEP] Closing connection");
+			window.removeEventListener("pagehide", onPageHide);
 			clearReconnect();
+			deleteSession();
 			if (statsTimer !== null) {
 				clearInterval(statsTimer);
 				statsTimer = null;

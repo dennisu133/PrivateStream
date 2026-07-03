@@ -1,6 +1,7 @@
 import { error } from "@sveltejs/kit";
 import { env } from "$env/dynamic/private";
 import { createPublicIpResolver } from "$lib/server/public-ip";
+import { toProxySessionPath, toSrsSessionUrl } from "$lib/server/whep-session";
 import type { RequestHandler } from "./$types";
 
 const SRS_WHEP_URL = env.SRS_WHEP_URL;
@@ -76,9 +77,53 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	}
 
 	const answerSdp = await res.text();
-	console.log("[WHEP] Proxy <- 200 answer");
-	return new Response(answerSdp, {
-		status: 200,
-		headers: { "Content-Type": "application/sdp" }
+	const headers: Record<string, string> = { "Content-Type": "application/sdp" };
+
+	// SRS identifies the session with a Location header; expose it as a
+	// same-origin proxy URL so the client can DELETE the session on teardown.
+	const srsLocation = res.headers.get("location");
+	const sessionPath = srsLocation && toProxySessionPath(srsLocation, SRS_WHEP_URL);
+	if (sessionPath) {
+		headers.Location = sessionPath;
+	}
+
+	console.log("[WHEP] Proxy <- 200 answer", sessionPath ?? "(no session location)");
+	return new Response(answerSdp, { status: 200, headers });
+};
+
+export const DELETE: RequestHandler = async ({ url, locals }) => {
+	if (!locals.user) {
+		throw error(401, "Unauthorized");
+	}
+	if (!SRS_WHEP_URL) {
+		throw error(500, "Missing SRS_WHEP_URL");
+	}
+
+	const location = url.searchParams.get("loc");
+	if (!location) {
+		throw error(400, "Missing session location");
+	}
+
+	const target = toSrsSessionUrl(location, SRS_WHEP_URL);
+	if (!target) {
+		throw error(400, "Invalid session location");
+	}
+
+	console.log("[WHEP] Proxy -> DELETE", target.toString());
+	const res = await fetchWithTimeout(
+		target.toString(),
+		{ method: "DELETE" },
+		FORWARD_TIMEOUT_MS
+	).catch(() => {
+		throw error(502, "Could not reach the SRS server");
 	});
+
+	// A 404 means the session already expired on SRS, which is what teardown
+	// wanted anyway; report success so the client does not retry.
+	if (!res.ok && res.status !== 404) {
+		console.error("[WHEP] SRS session delete failed", res.status, res.statusText);
+		throw error(502, "SRS refused to delete the session");
+	}
+
+	return new Response(null, { status: 204 });
 };
