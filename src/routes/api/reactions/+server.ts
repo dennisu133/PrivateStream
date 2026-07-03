@@ -1,5 +1,14 @@
 import { error, json } from "@sveltejs/kit";
+import { createFixedWindowRateLimiter } from "$lib/server/rate-limit";
 import type { RequestHandler } from "./$types";
+
+// Generous enough for enthusiastic spamming, tight enough that one viewer
+// cannot flood every other client's overlay indefinitely.
+const reactionRateLimiter = createFixedWindowRateLimiter({
+	windowMs: 10_000,
+	perKeyLimit: 30,
+	globalLimit: 120
+});
 
 // --- SSE client management ---
 
@@ -90,9 +99,22 @@ export const GET: RequestHandler = async ({ locals }) => {
  * POST endpoint: trigger a reaction broadcast.
  * Body: { id: string }
  */
-export const POST: RequestHandler = async ({ locals, request }) => {
+export const POST: RequestHandler = async ({ locals, request, getClientAddress, setHeaders }) => {
 	if (!locals.user) {
 		throw error(401, "Unauthorized");
+	}
+
+	let clientAddress = "unknown";
+	try {
+		clientAddress = getClientAddress();
+	} catch {
+		// The global limit still applies if the adapter cannot resolve an address.
+	}
+
+	const rateLimit = reactionRateLimiter.consume(clientAddress);
+	if (!rateLimit.allowed) {
+		setHeaders({ "Retry-After": rateLimit.retryAfterSeconds.toString() });
+		throw error(429, "Too many reactions. Slow down a little.");
 	}
 
 	const body = await request.json().catch(() => null);

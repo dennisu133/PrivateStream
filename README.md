@@ -68,7 +68,7 @@ If remote development is unavoidable, use a VPN or a TLS-protected reverse proxy
 
 ## Deployment
 
-Before deploying you need to set some environment variables within a `.env` file and trusted CSRF origins. Once you are done you can build and deploy this project by using `bun run build`. This will create a production-ready [Node](https://nodejs.org/en/about) environment.
+Before deploying you need to set some environment variables within a `.env` file. Once you are done you can build and deploy this project by using `bun run build`. This will create a production-ready [Node](https://nodejs.org/en/about) environment.
 
 If you want to deploy on a VPS you will need:
 
@@ -125,6 +125,11 @@ For a Cloudflare-proxied domain, `ADDRESS_HEADER=cf-connecting-ip` is simpler th
 ### PM2
 
 For persistent hosting I recommend using [PM2](https://pm2.keymetrics.io/). This application will keep your server running 24/7.
+
+> [!IMPORTANT]
+> Always run this application as a **single process** (PM2 fork mode, the default). Live state — connected reaction listeners, rate-limit counters and the cached public IP — is held in memory, so PM2 cluster mode (or any multi-instance setup) would split viewers across processes that cannot see each other's reactions.
+
+The app exposes an unauthenticated liveness probe at `/healthz` (returns `200 ok`). Point your uptime monitor at it to distinguish "process running" from "app actually serving requests". It does not check SRS or the stream itself.
 
 Currently there is a bug when running Sveltekit + bun + pm2. For more information check out [pm2_bun_workaround/](/pm2_bun_workaround/README.md).
 

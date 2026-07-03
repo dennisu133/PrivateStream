@@ -6,6 +6,8 @@ import type { RequestHandler } from "./$types";
 
 const SRS_WHEP_URL = env.SRS_WHEP_URL;
 const FORWARD_TIMEOUT_MS = 10_000;
+// Real SDP offers are a few KB; anything bigger is not a legitimate offer.
+const MAX_SDP_BYTES = 100_000;
 
 // Plain-text echo services that return the caller's IP as the response body.
 const DEFAULT_IP_LOOKUP_URLS = [
@@ -45,6 +47,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const offerSdp = await request.text();
 	if (!offerSdp) {
 		throw error(400, "Missing SDP offer");
+	}
+	if (offerSdp.length > MAX_SDP_BYTES) {
+		throw error(413, "SDP offer too large");
 	}
 
 	let serverIp: string;
