@@ -1,40 +1,36 @@
 import { error } from "@sveltejs/kit";
 import { env } from "$env/dynamic/private";
+import { createPublicIpResolver } from "$lib/server/public-ip";
 import type { RequestHandler } from "./$types";
 
 const SRS_WHEP_URL = env.SRS_WHEP_URL;
 const FORWARD_TIMEOUT_MS = 10_000;
-const IPIFY_URL = "https://api.ipify.org";
-const IPIFY_TIMEOUT_MS = 5_000;
-const IPIFY_CACHE_MS = 5 * 60 * 1000;
 
-type CachedIp = { value: string; expiresAt: number } | null;
+// Plain-text echo services that return the caller's IP as the response body.
+const DEFAULT_IP_LOOKUP_URLS = [
+	"https://api.ipify.org",
+	"https://ipv4.icanhazip.com",
+	"https://checkip.amazonaws.com"
+];
 
-let cachedServerIp: CachedIp = null;
+const configuredLookupUrls = env.IP_LOOKUP_URLS?.split(",")
+	.map((url) => url.trim())
+	.filter(Boolean);
 
-function withTimeout(input: RequestInfo | URL, init: RequestInit | undefined, ms: number) {
+const ipResolver = createPublicIpResolver({
+	staticIp: env.SERVER_PUBLIC_IP?.trim() || undefined,
+	lookupUrls: configuredLookupUrls?.length ? configuredLookupUrls : DEFAULT_IP_LOOKUP_URLS,
+	log: (message) => console.warn("[WHEP]", message)
+});
+
+async function fetchWithTimeout(input: string | URL, init: RequestInit | undefined, ms: number) {
 	const controller = new AbortController();
-	const t = setTimeout(() => controller.abort(), ms);
-	return {
-		fetch: () => fetch(input, { ...init, signal: controller.signal }).finally(() => clearTimeout(t))
-	};
-}
-
-async function resolveServerIp() {
-	const now = Date.now();
-	if (cachedServerIp && cachedServerIp.expiresAt > now) {
-		return cachedServerIp.value;
+	const timer = setTimeout(() => controller.abort(), ms);
+	try {
+		return await fetch(input, { ...init, signal: controller.signal });
+	} finally {
+		clearTimeout(timer);
 	}
-
-	const { fetch: timedFetch } = withTimeout(IPIFY_URL, undefined, IPIFY_TIMEOUT_MS);
-	const res = await timedFetch();
-	if (!res.ok) {
-		throw error(res.status, "Failed to resolve server IP");
-	}
-	const ip = (await res.text()).trim();
-	if (!ip) throw error(500, "Empty IP received from ipify");
-	cachedServerIp = { value: ip, expiresAt: now + IPIFY_CACHE_MS };
-	return ip;
 }
 
 export const POST: RequestHandler = async ({ request, locals }) => {
@@ -50,13 +46,18 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		throw error(400, "Missing SDP offer");
 	}
 
-	const serverIp = await resolveServerIp();
+	let serverIp: string;
+	try {
+		serverIp = await ipResolver.resolve();
+	} catch {
+		throw error(502, "Could not determine the server public IP");
+	}
 
 	const target = new URL(SRS_WHEP_URL);
 	target.searchParams.set("eip", serverIp);
 
 	console.log("[WHEP] Proxy ->", target.toString());
-	const { fetch: _fetch } = withTimeout(
+	const res = await fetchWithTimeout(
 		target.toString(),
 		{
 			method: "POST",
@@ -64,9 +65,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			body: offerSdp
 		},
 		FORWARD_TIMEOUT_MS
-	);
+	).catch(() => {
+		throw error(502, "Could not reach the SRS server");
+	});
 
-	const res = await _fetch();
 	if (!res.ok) {
 		const text = await res.text().catch(() => "");
 		console.error("[WHEP] SRS error", res.status, res.statusText, text);

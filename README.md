@@ -12,7 +12,13 @@ A password-gated private livestream viewer trying to achieve as little latency a
 
 ### Setting up SRS
 
-This project was developed using SRS 6.0. SRS is easily deployed using [docker](https://docs.docker.com/get-started/get-docker/). SRS relies on a [candidate](https://ossrs.net/lts/en-us/docs/v6/doc/webrtc#config-candidate) environment variable to pass the IP of the stream source to the viewer. When using this project make sure to assign it a wildcard ('\*') because the backend will fetch your public IP and transmit it to SRS during connection of a new viewer using [ipify.org](https://www.ipify.org/).
+This project was developed using SRS 6.0. SRS is easily deployed using [docker](https://docs.docker.com/get-started/get-docker/). SRS relies on a [candidate](https://ossrs.net/lts/en-us/docs/v6/doc/webrtc#config-candidate) environment variable to pass the IP of the stream source to the viewer. When using this project make sure to assign it a wildcard ('\*') because the backend transmits your public IP to SRS (via the `eip` query parameter) during connection of a new viewer.
+
+The backend determines your public IP as follows:
+
+1. If `SERVER_PUBLIC_IP` is set in `.env`, it is used directly and no external service is ever contacted. Recommended whenever your public IP is static (e.g. a VPS).
+2. Otherwise the IP is fetched from public echo services ([api.ipify.org](https://www.ipify.org/), ipv4.icanhazip.com and checkip.amazonaws.com by default, configurable via `IP_LOOKUP_URLS`), trying each in order. The result is cached for 60 seconds, so a changing residential IP is picked up within about a minute.
+3. If every lookup fails, the last known IP is reused so viewers can keep connecting during a lookup outage.
 
 For a simple setup using the default [rtc.conf](https://github.com/ossrs/srs/blob/develop/trunk/conf/rtc.conf) you can run: \
 `docker run --rm -it -p 1935:1935 -p 1985:1985 -p 8080:8080 --env CANDIDATE="*" -p 8000:8000/udp ossrs/srs:6 ./objs/srs -c conf/rtc.conf`
