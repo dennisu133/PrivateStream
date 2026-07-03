@@ -6,7 +6,7 @@
 
 <div class="flex flex-col items-center gap-6">
 	<!-- Admission ticket card -->
-	<div class="relative w-full max-w-xs">
+	<div class="relative w-full max-w-xs" class:ticket-shake={!!form?.error}>
 		<!-- Ticket stub decoration -->
 		<div
 			class="absolute -top-px right-6 left-6 h-px bg-linear-to-r from-transparent via-theater-gold/30 to-transparent"
@@ -23,17 +23,11 @@
 						name="password"
 						placeholder="Enter passphrase"
 						required
-						class="w-full rounded-sm border border-theater-border bg-black/40 px-4 py-3 font-mono text-sm text-white/90 transition-all duration-200 placeholder:text-white/20 focus:border-theater-gold/40 focus:shadow-[0_0_0_1px_oklch(0.76_0.1_75_/_0.15)] focus:outline-none"
+						class="w-full rounded-sm border bg-black/40 px-4 py-3 font-mono text-sm text-white/90 transition-all duration-200 placeholder:text-white/20 focus:border-theater-gold/40 focus:shadow-[0_0_0_1px_oklch(0.76_0.1_75_/_0.15)] focus:outline-none {form?.error
+							? 'border-red-500/30'
+							: 'border-theater-border'}"
 					/>
 				</div>
-
-				{#if form?.error}
-					<p
-						class="rounded-sm border border-red-500/20 bg-red-500/6 px-3 py-2.5 font-mono text-xs text-red-400/80"
-					>
-						{form.error}
-					</p>
-				{/if}
 
 				<button
 					type="submit"
@@ -49,5 +43,66 @@
 			class="absolute right-6 -bottom-px left-6 h-px bg-linear-to-r from-transparent via-theater-gold/20 to-transparent"
 			aria-hidden="true"
 		></div>
+
+		<!-- Rejection slip: absolutely positioned below the ticket so the card
+		     itself never grows and the submit button never shifts. -->
+		{#if form?.error}
+			<p
+				role="alert"
+				class="error-slip absolute inset-x-0 top-full mt-4 rounded-sm border border-red-500/20 bg-red-500/6 px-3 py-2.5 text-center font-mono text-xs text-red-400/80 backdrop-blur-sm"
+			>
+				{form.error}
+			</p>
+		{/if}
 	</div>
 </div>
+
+<!-- Discreet public showcase entrance for visitors without a passphrase -->
+<a
+	href="/demo"
+	class="fixed bottom-6 left-1/2 z-60 -translate-x-1/2 font-mono text-[11px] tracking-[0.2em] text-white/25 uppercase transition-colors duration-300 hover:text-theater-gold/70"
+>
+	View demo
+</a>
+
+<style>
+	@media (prefers-reduced-motion: no-preference) {
+		.ticket-shake {
+			animation: ticket-shake 0.4s ease-in-out;
+		}
+
+		.error-slip {
+			animation: error-slip-in 0.3s ease-out;
+		}
+	}
+
+	@keyframes ticket-shake {
+		0%,
+		100% {
+			transform: translateX(0);
+		}
+		20% {
+			transform: translateX(-6px);
+		}
+		40% {
+			transform: translateX(6px);
+		}
+		60% {
+			transform: translateX(-4px);
+		}
+		80% {
+			transform: translateX(4px);
+		}
+	}
+
+	@keyframes error-slip-in {
+		from {
+			opacity: 0;
+			transform: translateY(-4px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+</style>

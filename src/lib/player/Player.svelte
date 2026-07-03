@@ -15,7 +15,9 @@
 	import type { WhepController } from "./actions/whep";
 	import poster from "$lib/assets/poster.webp";
 
-	let { endpoint = "/api/whep", enableFunFeatures = true } = $props();
+	// When `demoSrc` is set the player loops a local video instead of starting
+	// WHEP, so the page works without authentication (used by /demo).
+	let { endpoint = "/api/whep", enableFunFeatures = true, demoSrc = null } = $props();
 
 	let frameEl = $state<HTMLDivElement | null>(null);
 	let videoEl = $state<HTMLVideoElement | null>(null);
@@ -26,7 +28,26 @@
 	const isLive = $derived(getStreamStatus() === "live");
 
 	onMount(() => {
-		if (endpoint && videoEl) {
+		if (!videoEl) return;
+
+		if (demoSrc) {
+			const video = videoEl;
+			const handlePlaying = () => {
+				setConnectionState("connected");
+				setStreamStatus("live");
+			};
+			video.addEventListener("playing", handlePlaying);
+			video.loop = true;
+			video.src = demoSrc;
+
+			return () => {
+				video.removeEventListener("playing", handlePlaying);
+				setConnectionState("new");
+				setStreamStatus("pending");
+			};
+		}
+
+		if (endpoint) {
 			controller = startWhep(videoEl, {
 				endpoint,
 				onStateChange: (s) => setConnectionState(s),
