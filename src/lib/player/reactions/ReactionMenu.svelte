@@ -121,13 +121,13 @@
 
 <div
 	bind:this={containerEl}
-	class="flex h-full w-full flex-col overflow-hidden rounded-md bg-black/80 shadow-lg backdrop-blur-sm"
+	class="flex min-h-0 w-full flex-col overflow-hidden rounded-md bg-black/80 shadow-lg backdrop-blur-sm"
 >
 	{#if reactions.length > 0}
 		<div
 			role="listbox"
 			tabindex="0"
-			class="grid h-full auto-rows-max grid-cols-3 gap-2 overflow-y-auto p-3 outline-hidden"
+			class="grid min-h-0 auto-rows-max grid-cols-3 gap-2 overflow-y-auto p-3 outline-hidden"
 			bind:this={menuEl}
 			onkeydown={handleMenuKeydown}
 		>

@@ -100,7 +100,9 @@
 
 <!-- Menu positioned in player frame -->
 {#if menuOpen}
-	<div class="absolute right-2 bottom-14 z-40 h-[calc(100%-4rem)] w-64">
+	<div
+		class="absolute right-2 bottom-14 z-40 flex max-h-[calc(100%-4rem)] w-64 flex-col justify-end"
+	>
 		<ReactionMenu
 			{toggleButtonEl}
 			onSelect={handleReactionSelect}
