@@ -15,6 +15,11 @@ export type WhepController = {
 };
 
 const WATCHDOG_INTERVAL_MS = 2000;
+// Renegotiate when a "connected" session has delivered no media for this long.
+const STALL_RECONNECT_MS = 10_000;
+// "disconnected" is often a transient ICE hiccup that recovers on its own;
+// wait at least this long before tearing the connection down.
+const DISCONNECTED_GRACE_MS = 5000;
 
 export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}): WhepController {
 	const endpoint = opts.endpoint ?? "/api/whep";
@@ -63,13 +68,13 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}): Wh
 		}
 	};
 
-	const scheduleReconnect = () => {
+	const scheduleReconnect = (delayMs = currentReconnectDelayMs) => {
 		if (stopped || reconnectTimer !== null) return;
-		console.warn(`[WHEP] Scheduling reconnect in ${currentReconnectDelayMs}ms`);
+		console.warn(`[WHEP] Scheduling reconnect in ${delayMs}ms`);
 		reconnectTimer = window.setTimeout(() => {
 			reconnectTimer = null;
 			void connect();
-		}, currentReconnectDelayMs);
+		}, delayMs);
 	};
 
 	const negotiate = async (target: RTCPeerConnection) => {
@@ -111,15 +116,18 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}): Wh
 		};
 
 		localPc.onconnectionstatechange = () => {
+			if (localPc !== pc) return;
 			const state = localPc.connectionState;
 			console.log("[WHEP] RTC state:", state);
 			opts.onStateChange?.(state);
 			if (state === "connected") {
 				clearReconnect();
-				currentReconnectDelayMs = reconnectDelayMs;
 				return;
 			}
-			if (state === "disconnected" || state === "failed" || state === "closed") {
+			if (state === "disconnected") {
+				setReceiving("idle");
+				scheduleReconnect(Math.max(currentReconnectDelayMs, DISCONNECTED_GRACE_MS));
+			} else if (state === "failed" || state === "closed") {
 				setReceiving("idle");
 				scheduleReconnect();
 			}
@@ -151,6 +159,12 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}): Wh
 			const dataReceived = bytes > last.bytes;
 			if (last.updatedAt === 0 || dataReceived) {
 				last = { bytes, updatedAt: now };
+				if (dataReceived) {
+					// Media is flowing again; cancel any pending stall reconnect
+					// and reset the backoff only on proof of a healthy stream.
+					clearReconnect();
+					currentReconnectDelayMs = reconnectDelayMs;
+				}
 				if (bytes > 0 && receiving !== "live") {
 					console.log("[WHEP] Data received");
 					setReceiving("live");
@@ -160,6 +174,15 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}): Wh
 					console.warn(`[WHEP] No data received for ${WATCHDOG_INTERVAL_MS}ms`);
 				}
 				setReceiving("idle");
+
+				// A session that stays "connected" without media (e.g. SRS kept
+				// it alive across a publisher restart) never fires a state
+				// change, so renegotiate ourselves once the stall persists.
+				if (now - last.updatedAt >= STALL_RECONNECT_MS && reconnectTimer === null) {
+					console.warn(`[WHEP] No data for ${STALL_RECONNECT_MS}ms while connected; renegotiating`);
+					currentReconnectDelayMs = Math.min(maxReconnectDelayMs, currentReconnectDelayMs * 2);
+					scheduleReconnect();
+				}
 			}
 		} catch {}
 	};
