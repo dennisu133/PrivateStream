@@ -1,25 +1,20 @@
-<!-- importing /static/catchip.gif into the bottom right corner of the page -->
-<!-- and making it explode on click -->
+<!-- A cat-eating-chips gif in the bottom right corner of the page -->
+<!-- that goes out with a bang on click -->
 
 <script lang="ts">
-	import confetti from "canvas-confetti";
 	import catchipGif from "$lib/assets/catchip.gif";
+	import { explode } from "$lib/effects/explosion";
 
 	let isGifVisible = $state(true);
+	let detonating = false;
 
 	function handleGifClick(event: MouseEvent) {
-		isGifVisible = false;
+		if (detonating) return;
+		detonating = true;
 
-		const origin = {
-			x: event.clientX / window.innerWidth,
-			y: event.clientY / window.innerHeight
-		};
-
-		confetti({
-			particleCount: 150,
-			spread: 90,
-			origin: origin,
-			colors: ["#ffc700", "#ff0000", "#ffffff", "#fdff00"]
+		// The gif shrugs off the near misses; only the direct hit removes it.
+		explode(event.clientX, event.clientY, {
+			onFinale: () => (isGifVisible = false)
 		});
 	}
 </script>
