@@ -6,7 +6,7 @@ A password-gated private livestream viewer trying to achieve as little latency a
 
 ## Preview
 
-![player](/screenshots/player.jpg)
+![player](/screenshots/player.webp)
 
 ## Prerequesites
 
