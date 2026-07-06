@@ -62,6 +62,11 @@
 	});
 </script>
 
+<svelte:head>
+	<!-- The poster is the LCP element; `poster` can't carry fetchpriority, so preload it -->
+	<link rel="preload" as="image" href={poster} fetchpriority="high" />
+</svelte:head>
+
 <!-- Cinema screen -->
 <div
 	class="relative w-[72vw] max-w-[min(90vw,calc((82vh-4rem)*16/9))] min-w-80 p-0 min-[448px]:p-3"

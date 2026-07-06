@@ -29,6 +29,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 	// `no-referrer` turns the Origin header into `null` for basic form POSTs,
 	// which causes SvelteKit's CSRF protection to reject the login action.
 	response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+	// Private site: keep it out of search indexes (robots.txt only blocks crawling)
+	response.headers.set("X-Robots-Tag", "noindex");
 	response.headers.set("X-Content-Type-Options", "nosniff");
 	response.headers.set("X-Frame-Options", "DENY");
 	response.headers.set("Cross-Origin-Opener-Policy", "same-origin");

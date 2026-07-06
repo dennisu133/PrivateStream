@@ -12,6 +12,10 @@ const config = {
 			precompress: true
 		}),
 
+		// The main stylesheet is ~34 KB raw (~7 KB gzipped); inlining it removes
+		// the render-blocking request
+		inlineStyleThreshold: 40960,
+
 		csp: {
 			mode: "auto",
 			directives: {

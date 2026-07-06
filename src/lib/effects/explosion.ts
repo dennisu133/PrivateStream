@@ -1,8 +1,8 @@
 /**
  * A comically over-the-top chain reaction rendered on a throwaway full-screen
- * canvas: three escalating blasts hopscotching across the screen, a
- * mushroom-cloud finale and a shower of glowing embers. No assets, no workers
- * (CSP-safe), removes itself when the smoke clears.
+ * canvas: three escalating blasts hopscotching across the screen, an orbital
+ * annihilation beam finale and a shower of glowing embers. No assets, no
+ * workers (CSP-safe), removes itself when the smoke clears.
  */
 
 type Rgb = [number, number, number];
@@ -25,6 +25,11 @@ const BLASTS: Array<[number, number]> = [
 const FINALE_AT = 1.15;
 const FINALE_SCALE = 2.4;
 const TOTAL_MS = 5500;
+
+// The beam races down from orbit, bores into the target, then dissipates.
+const BEAM_DESCENT = 0.12;
+const BEAM_SUSTAIN = 0.55;
+const BEAM_FADE = 0.35;
 
 type FirePuff = {
 	x: number;
@@ -78,6 +83,7 @@ type Ember = {
 type Flash = { x: number; y: number; birth: number; scale: number };
 type Wave = { x: number; y: number; birth: number; scale: number };
 type Shake = { birth: number; amp: number; dur: number };
+type Beam = { x: number; y: number; birth: number };
 
 type Stage = {
 	fire: FirePuff[];
@@ -88,6 +94,7 @@ type Stage = {
 	flashes: Flash[];
 	waves: Wave[];
 	shakes: Shake[];
+	beams: Beam[];
 };
 
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
@@ -138,7 +145,8 @@ export function explode(x: number, y: number, options: ExplodeOptions = {}) {
 		embers: [],
 		flashes: [],
 		waves: [],
-		shakes: []
+		shakes: [],
+		beams: []
 	};
 
 	// The chain reaction: near misses bracketing the target, which survives
@@ -152,10 +160,13 @@ export function explode(x: number, y: number, options: ExplodeOptions = {}) {
 		spawnBurst(stage, bx, by, scale, delay, reduceMotion);
 	}
 
-	// Grand finale: the direct hit. Mega blast, mushroom cloud, ember rain.
+	// Grand finale: judgment from orbit. The beam slams down onto the target
+	// the instant the mega blast goes off, bores in for a beat, then the
+	// ember rain falls out of whatever is left.
+	stage.beams.push({ x, y, birth: FINALE_AT - BEAM_DESCENT });
+	spawnBeamSparks(stage, x, y, FINALE_AT);
 	spawnBurst(stage, x, y, FINALE_SCALE, FINALE_AT, reduceMotion);
 	stage.waves.push({ x, y, birth: FINALE_AT + 0.09, scale: FINALE_SCALE * 1.3 });
-	spawnMushroom(stage, x, y, FINALE_AT);
 	spawnEmbers(stage, x, y, FINALE_AT + 0.12);
 	if (!reduceMotion) stage.shakes.push({ birth: FINALE_AT, amp: 20, dur: 0.7 });
 
@@ -188,6 +199,7 @@ export function explode(x: number, y: number, options: ExplodeOptions = {}) {
 		drawFire(ctx, stage.fire, t);
 		drawSparks(ctx, stage.sparks, t);
 		drawEmbers(ctx, stage.embers, t);
+		drawBeams(ctx, stage.beams, t);
 		drawFlashes(ctx, stage.flashes, width, height, t);
 		ctx.globalCompositeOperation = "source-over";
 
@@ -262,47 +274,31 @@ function spawnBurst(
 	}
 }
 
-/** Stem of rising fire topped by a billowing cap. Physics sold separately. */
-function spawnMushroom(stage: Stage, x: number, y: number, birth: number) {
-	for (let i = 0; i < 20; i++) {
-		stage.fire.push({
-			x: x + rand(-16, 16),
-			y,
-			vx: rand(-25, 25),
-			vy: rand(-360, -480),
-			birth: birth + rand(0.05, 0.55),
-			life: rand(0.9, 1.4),
-			r0: rand(18, 32),
-			growth: rand(20, 45),
-			dragK: 1.2
-		});
-	}
-
-	for (let i = 0; i < 26; i++) {
+/** Molten spray spitting sideways off the column while the beam bores in. */
+function spawnBeamSparks(stage: Stage, x: number, y: number, birth: number) {
+	for (let i = 0; i < 36; i++) {
 		const side = Math.random() < 0.5 ? -1 : 1;
-		stage.fire.push({
-			x: x + rand(-40, 40),
-			y: y - rand(250, 330),
-			vx: side * rand(50, 160),
-			vy: rand(-50, 10),
-			birth: birth + rand(0.5, 0.95),
-			life: rand(1.2, 1.9),
-			r0: rand(24, 42),
-			growth: rand(40, 85),
-			dragK: 1.2
+		stage.sparks.push({
+			x: x + side * rand(4, 14),
+			y: rand(0, y),
+			vx: side * rand(80, 320),
+			vy: rand(-60, 60),
+			birth: birth + rand(0, BEAM_SUSTAIN),
+			life: rand(0.3, 0.7)
 		});
 	}
 
-	for (let i = 0; i < 18; i++) {
+	// Smoke boiling off the impact point, so something lingers after the fade.
+	for (let i = 0; i < 12; i++) {
 		stage.smoke.push({
-			x: x + rand(-30, 30),
-			y: y - rand(0, 280),
-			vx: rand(-40, 40),
-			vy: rand(-120, -30),
-			birth: birth + rand(0.7, 1.4),
-			life: rand(1.6, 2.4),
-			r0: rand(24, 44),
-			growth: rand(50, 90)
+			x: x + rand(-24, 24),
+			y: y - rand(0, 40),
+			vx: rand(-50, 50),
+			vy: rand(-140, -60),
+			birth: birth + rand(0.4, 1.1),
+			life: rand(1.4, 2.2),
+			r0: rand(20, 38),
+			growth: rand(40, 80)
 		});
 	}
 }
@@ -320,6 +316,51 @@ function spawnEmbers(stage: Stage, x: number, y: number, birth: number) {
 			swayFreq: rand(2, 5),
 			swayPhase: rand(0, Math.PI * 2)
 		});
+	}
+}
+
+/** A white-hot column from the top of the screen down to the impact point. */
+function drawBeams(ctx: CanvasRenderingContext2D, beams: Beam[], t: number) {
+	for (const b of beams) {
+		const age = t - b.birth;
+		if (age < 0 || age >= BEAM_DESCENT + BEAM_SUSTAIN + BEAM_FADE) continue;
+
+		// The tip accelerates down from the sky, then the column stays planted.
+		const descent = Math.min(1, age / BEAM_DESCENT);
+		const tipY = b.y * descent * descent;
+
+		const fadeStart = BEAM_DESCENT + BEAM_SUSTAIN;
+		const intensity = age > fadeStart ? 1 - (age - fadeStart) / BEAM_FADE : 1;
+		const flicker = 0.82 + 0.18 * Math.sin(age * 47) * Math.sin(age * 31 + 1.7);
+		const coreW = 3 + 11 * intensity * flicker;
+
+		// Outer glow, sheath, core: widening strips with soft horizontal edges.
+		const layers: Array<[number, string]> = [
+			[coreW * 5, `rgba(255,150,40,${0.16 * intensity})`],
+			[coreW * 2.4, `rgba(255,205,110,${0.35 * intensity})`],
+			[coreW, `rgba(255,252,240,${0.95 * intensity})`]
+		];
+		for (const [w, color] of layers) {
+			const gradient = ctx.createLinearGradient(b.x - w, 0, b.x + w, 0);
+			gradient.addColorStop(0, "rgba(255,200,120,0)");
+			gradient.addColorStop(0.5, color);
+			gradient.addColorStop(1, "rgba(255,200,120,0)");
+			ctx.fillStyle = gradient;
+			ctx.fillRect(b.x - w, 0, w * 2, tipY);
+		}
+
+		// Molten blob where the beam bores into the ground.
+		if (descent >= 1) {
+			const r = 46 * intensity * (0.9 + 0.1 * Math.sin(age * 40));
+			const gradient = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, r);
+			gradient.addColorStop(0, `rgba(255,255,245,${0.9 * intensity})`);
+			gradient.addColorStop(0.4, `rgba(255,190,90,${0.55 * intensity})`);
+			gradient.addColorStop(1, "rgba(255,140,50,0)");
+			ctx.fillStyle = gradient;
+			ctx.beginPath();
+			ctx.arc(b.x, b.y, r, 0, Math.PI * 2);
+			ctx.fill();
+		}
 	}
 }
 

@@ -2,7 +2,7 @@
 <!-- that goes out with a bang on click -->
 
 <script lang="ts">
-	import catchipGif from "$lib/assets/catchip.gif";
+	import catchipGif from "$lib/assets/catchip.webp";
 	import { explode } from "$lib/effects/explosion";
 
 	let isGifVisible = $state(true);
@@ -26,7 +26,9 @@
 		class="fixed right-5 bottom-5 z-60 cursor-pointer bg-transparent transition-transform duration-300 ease-cinema hover:scale-110"
 	>
 		<img
-			fetchpriority="high"
+			fetchpriority="low"
+			loading="lazy"
+			decoding="async"
 			src={catchipGif}
 			alt="cat eating chips"
 			class="opacity-70 drop-shadow-[0_0_8px_oklch(0_0_0/0.5)]"

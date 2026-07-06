@@ -31,7 +31,7 @@
 	</span>
 	<span
 		class="text-theater-muted
-		{state === 'ok' ? 'text-emerald-400/70' : state === 'warn' ? 'text-red-400/70' : ''}"
+		{state === 'ok' ? 'text-emerald-400/85' : state === 'warn' ? 'text-red-400/85' : ''}"
 	>
 		{label}
 	</span>
