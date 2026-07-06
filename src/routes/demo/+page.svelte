@@ -19,8 +19,14 @@
 <Catchip />
 <Neko />
 
-<div
-	class="fixed top-5 right-5 z-60 rounded-sm border border-theater-border bg-theater-dark/90 px-4 py-2.5 font-mono text-xs tracking-wider backdrop-blur-sm"
+<a
+	href="https://github.com/dennisu133/PrivateStream"
+	target="_blank"
+	rel="noopener noreferrer"
+	class="fixed top-5 right-5 z-60 max-w-[calc(100vw-2.5rem)] rounded-sm border border-theater-border bg-theater-dark/90 px-4 py-2.5 text-right font-mono text-xs tracking-wider backdrop-blur-sm"
 >
-	DEMO MODE
-</div>
+	<span class="text-theater-muted">Want to host this yourself?</span>
+	<span class="block text-theater-gold-dim transition-colors hover:text-theater-gold">
+		github.com/<wbr />dennisu133/<wbr />PrivateStream ↗
+	</span>
+</a>

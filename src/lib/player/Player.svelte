@@ -63,8 +63,10 @@
 </script>
 
 <svelte:head>
-	<!-- The poster is the LCP element; `poster` can't carry fetchpriority, so preload it -->
-	<link rel="preload" as="image" href={poster} fetchpriority="high" />
+	{#if !demoSrc}
+		<!-- The poster is the LCP element; `poster` can't carry fetchpriority, so preload it -->
+		<link rel="preload" as="image" href={poster} fetchpriority="high" />
+	{/if}
 </svelte:head>
 
 <!-- Cinema screen -->
@@ -104,7 +106,7 @@
 			<video
 				bind:this={videoEl}
 				aria-label="Video stream"
-				{poster}
+				poster={demoSrc ? undefined : poster}
 				autoplay
 				muted
 				playsinline
