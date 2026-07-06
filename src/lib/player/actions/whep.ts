@@ -54,12 +54,35 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}): Wh
 		fetch(url, { method: "DELETE", keepalive: true }).catch(() => {});
 	};
 
-	// `keepalive` lets the DELETE survive the page being closed. Skip bfcache
-	// suspensions (`persisted`), where the page may resume with its connection.
-	const onPageHide = (e: PageTransitionEvent) => {
-		if (!e.persisted) deleteSession();
+	// Close the peer connection and stop all tracks without marking the
+	// controller stopped, so a later connect() can bring the session back.
+	const closeConnection = () => {
+		clearReconnect();
+		try {
+			pc?.close();
+		} catch {}
+		pc = null;
+		try {
+			const ms = videoEl.srcObject as MediaStream | null;
+			ms?.getTracks().forEach((t) => t.stop());
+		} catch {}
+		videoEl.srcObject = null;
+		setReceiving("idle");
+	};
+
+	// `keepalive` lets the DELETE survive the page being closed. The connection
+	// must be fully torn down even for bfcache suspensions: an open
+	// RTCPeerConnection or live MediaStreamTrack makes the page ineligible for
+	// the back/forward cache, so we close everything and rebuild on pageshow.
+	const onPageHide = () => {
+		deleteSession();
+		closeConnection();
+	};
+	const onPageShow = (e: PageTransitionEvent) => {
+		if (e.persisted && !stopped) void connect();
 	};
 	window.addEventListener("pagehide", onPageHide);
+	window.addEventListener("pageshow", onPageShow);
 
 	const clearReconnect = () => {
 		if (reconnectTimer !== null) {
@@ -200,24 +223,13 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}): Wh
 			stopped = true;
 			console.warn("[WHEP] Closing connection");
 			window.removeEventListener("pagehide", onPageHide);
-			clearReconnect();
+			window.removeEventListener("pageshow", onPageShow);
 			deleteSession();
 			if (statsTimer !== null) {
 				clearInterval(statsTimer);
 				statsTimer = null;
 			}
-			try {
-				pc?.close();
-			} catch {}
-			pc = null;
-			setReceiving("idle");
-			try {
-				if (videoEl.srcObject) {
-					const ms = videoEl.srcObject as MediaStream;
-					ms.getTracks().forEach((t) => t.stop());
-				}
-			} catch {}
-			videoEl.srcObject = null;
+			closeConnection();
 		}
 	};
 }

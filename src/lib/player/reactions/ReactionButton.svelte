@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Sticker } from "@lucide/svelte";
+	import { SmilePlus } from "@lucide/svelte";
 	import Button from "../controls/Button.svelte";
 
 	let {
@@ -31,6 +31,6 @@
 			onInteract?.();
 		}}
 	>
-		<Sticker size={24} />
+		<SmilePlus size={24} />
 	</Button>
 </span>

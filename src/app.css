@@ -181,7 +181,9 @@ input[type="range"].volume-slider::-webkit-slider-thumb {
 	width: 10px;
 	height: 10px;
 	border-radius: 50%;
-	background: oklch(1 0 0 / 0.6);
+	/* Opaque stand-in for the icons' white/60: alpha would let the track
+	   line show through the thumb */
+	background: var(--color-theater-muted);
 	cursor: pointer;
 	box-shadow: 0 0 4px oklch(1 0 0 / 0.1);
 	transition:
@@ -200,7 +202,9 @@ input[type="range"].volume-slider::-moz-range-thumb {
 	width: 10px;
 	height: 10px;
 	border-radius: 50%;
-	background: oklch(1 0 0 / 0.6);
+	/* Opaque stand-in for the icons' white/60: alpha would let the track
+	   line show through the thumb */
+	background: var(--color-theater-muted);
 	cursor: pointer;
 	border: none;
 	box-shadow: 0 0 4px oklch(1 0 0 / 0.1);

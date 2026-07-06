@@ -37,8 +37,6 @@
 				setStreamStatus("live");
 			};
 			video.addEventListener("playing", handlePlaying);
-			video.loop = true;
-			video.src = demoSrc;
 
 			return () => {
 				video.removeEventListener("playing", handlePlaying);
@@ -103,10 +101,14 @@
 				: "0 0 60px -15px oklch(0.4 0.08 250 / 0.2), 0 4px 30px -5px oklch(0 0 0 / 0.8)"}
 			bind:this={frameEl}
 		>
+			<!-- Demo src/loop live in the markup (not onMount) so the SSR HTML carries
+			     the src and the browser starts fetching before hydration (LCP) -->
 			<video
 				bind:this={videoEl}
 				aria-label="Video stream"
 				poster={demoSrc ? undefined : poster}
+				src={demoSrc ?? undefined}
+				loop={Boolean(demoSrc)}
 				autoplay
 				muted
 				playsinline
@@ -120,9 +122,11 @@
 			{/if}
 
 			<PlayerButtons frame={frameEl}>
-				{#if enableFunFeatures && reactionSystem}
+				<!-- Rendered during SSR too (no `reactionSystem` gate): the button
+				     popping in after hydration shifted the whole controls bar (CLS) -->
+				{#if enableFunFeatures}
 					<ReactionButton
-						isOpen={reactionSystem.isOpen()}
+						isOpen={reactionSystem?.isOpen() ?? false}
 						onToggle={() => reactionSystem?.toggle()}
 						onInteract={() => reactionSystem?.interact()}
 						onMount={(el) => reactionSystem?.setToggleButtonEl(el)}
