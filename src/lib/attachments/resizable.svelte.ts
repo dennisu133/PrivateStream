@@ -2,6 +2,13 @@ import type { Attachment } from "svelte/attachments";
 
 export type ResizableOptions = {
 	desktopQuery?: string;
+	/**
+	 * Selector for the child that defines the resizable content, when the element
+	 * also holds things that aren't part of it - a caption or status line under a
+	 * frame, say. Handles then sit in the padding ring just outside that child on
+	 * all four sides, rather than being pushed below the trailing content.
+	 */
+	surfaceSelector?: string;
 };
 
 type Edge =
@@ -44,7 +51,7 @@ const CURSOR_MAP: Record<NonNullable<Edge>, string> = {
  * ```
  */
 export function resizable(options: ResizableOptions = {}): Attachment<HTMLElement> {
-	const { desktopQuery = "(min-width: 900px)" } = options;
+	const { desktopQuery = "(min-width: 900px)", surfaceSelector } = options;
 
 	return (element) => {
 		let isResizable = false;
@@ -56,10 +63,23 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 
 		const isFullscreen = () => document.fullscreenElement !== null;
 
-		/** Get current aspect ratio from element dimensions */
+		/**
+		 * Height of the resizable surface. Without a surface child this is just
+		 * the element. With one, it is that child plus the padding ring the
+		 * handles live in - which is exactly how the left, right and top edges
+		 * already behave, so the bottom band ends up symmetric with them.
+		 */
+		const getSurfaceHeight = (rect: DOMRect) => {
+			const surface = surfaceSelector ? element.querySelector(surfaceSelector) : null;
+			if (!surface) return rect.height;
+			return surface.getBoundingClientRect().bottom - rect.top + EDGE_THRESHOLD;
+		};
+
+		/** Get current aspect ratio from the resizable surface */
 		const getAspectRatio = () => {
 			const rect = element.getBoundingClientRect();
-			return rect.height > 0 ? rect.width / rect.height : 1;
+			const height = getSurfaceHeight(rect);
+			return height > 0 ? rect.width / height : 1;
 		};
 
 		/** Get min/max constraints from CSS computed styles */
@@ -118,8 +138,13 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 			const x = clientX - rect.left;
 			const y = clientY - rect.top;
 
+			// Below the surface there is no handle - otherwise the left/right bands
+			// would keep reaching down beside the trailing content.
+			const surfaceHeight = getSurfaceHeight(rect);
+			if (y > surfaceHeight) return null;
+
 			const nearTop = y < EDGE_THRESHOLD;
-			const nearBottom = y > rect.height - EDGE_THRESHOLD;
+			const nearBottom = y > surfaceHeight - EDGE_THRESHOLD;
 			const nearLeft = x < EDGE_THRESHOLD;
 			const nearRight = x > rect.width - EDGE_THRESHOLD;
 

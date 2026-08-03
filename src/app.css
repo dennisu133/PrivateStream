@@ -18,21 +18,47 @@
 }
 
 @theme {
+	/* The UI is monospace throughout - projection-booth equipment lettering - so
+	   sans resolves to the same face and no system font can leak in through a
+	   fallback. Playfair is the single display voice, spent only on the login
+	   wordmark: one serif against an all-mono UI is the marquee/equipment
+	   contrast the theater metaphor wants. It is the only thing that loads it,
+	   so /demo and the player never pay for it. */
 	--font-display: "Playfair Display", serif;
 	--font-mono: "JetBrains Mono", monospace;
+	--font-sans: "JetBrains Mono", monospace;
 
-	--color-theater-black: oklch(0.145 0 0);
-	--color-theater-dark: oklch(0.17 0 0);
-	--color-theater-surface: oklch(0.2 0 0);
-	--color-theater-border: oklch(0.26 0 0);
-	--color-theater-muted: oklch(0.62 0 0); /* ≥4.5:1 on theater-black */
+	/* Projection Booth palette.
+	 *
+	 * The room is true black, so on OLED the pixels are physically off and the
+	 * panel IS the dark theater. This is a hard constraint, not a preference:
+	 * a soft gradient over a near-black grey has only ~30 of the 256 sRGB code
+	 * values to work with, which is what produced the contour rings. Over true
+	 * black those gradients compute to nothing at all, so they're gone instead
+	 * of tuned. Light is expressed as hard-edged rule work and typography.
+	 *
+	 * Everything is warm. Neutral near-black greys are the most exposed colour
+	 * on OLED — they read as milky slabs next to true black — so the only
+	 * non-black fills carry a little chroma to look deliberate. */
+	--color-theater-black: oklch(0 0 0);
+	--color-theater-dark: oklch(0.12 0.008 70); /* warm near-black, sparingly */
+	--color-theater-border: oklch(0.76 0.1 75 / 0.18); /* gold hairline, not grey */
+	--color-theater-muted: oklch(0.68 0.012 80); /* 7.3:1 on black */
 	--color-theater-gold: oklch(0.76 0.1 75);
 	--color-theater-gold-dim: oklch(0.6 0.1 65);
-	--color-theater-amber: oklch(0.85 0.14 85);
-	--color-theater-glow: oklch(0.4 0.08 250);
-	--color-theater-screen: oklch(0.3 0.06 250);
+	--color-theater-paper: oklch(0.94 0.008 80); /* warm off-white for text */
 
 	--ease-cinema: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Alpha of the screen's edge work — the hairline rules and the film-gate
+   brackets. Registering it makes it animatable, so going live brightens the
+   frame's edges instead of blooming a halo: the same "the projector just
+   struck" moment, expressed with hard edges that cannot band. */
+@property --edge {
+	syntax: "<number>";
+	inherits: true;
+	initial-value: 0.22;
 }
 
 @layer base {
@@ -42,12 +68,14 @@
 	}
 	body {
 		background: var(--color-theater-black);
-		color: oklch(0.92 0 0);
+		color: var(--color-theater-paper);
 		overflow: hidden;
 	}
 }
 
-/* Film grain overlay - subtle noise texture */
+/* Film grain overlay. The only texture in the design, and the only effect that
+   gets BETTER on OLED: grain is dither, so it breaks up whatever quantisation
+   survives elsewhere, and over true black it reads as actual film stock. */
 @layer utilities {
 	.film-grain {
 		position: relative;
@@ -56,36 +84,22 @@
 		content: "";
 		position: fixed;
 		inset: 0;
-		opacity: 0.03;
+		opacity: 0.05;
 		pointer-events: none;
 		z-index: 40;
 		background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
 		background-size: 256px 256px;
 	}
 
-	/* Vignette effect - darkened edges like a theater */
-	.theater-vignette {
-		position: relative;
-	}
-	.theater-vignette::after {
-		content: "";
-		position: fixed;
-		inset: 0;
-		pointer-events: none;
-		z-index: 50;
-		background: radial-gradient(
-			ellipse at center,
-			transparent 40%,
-			oklch(0 0 0 / 0.4) 75%,
-			oklch(0 0 0 / 0.8) 100%
-		);
-	}
+	/* The vignette is gone: a true-black room can't be darkened at the edges,
+	   so it computed to pure banding and nothing else. */
 
-	/* Projector dust particles */
+	/* Projector dust particles. Hard-edged 1-3px points, so they carry
+	   atmosphere without a gradient anywhere. */
 	.dust-particle {
 		position: absolute;
 		border-radius: 50%;
-		background: oklch(1 0 0 / 0.3);
+		background: oklch(0.94 0.008 80 / 0.3);
 		pointer-events: none;
 		animation: dust-float linear infinite;
 	}
@@ -124,38 +138,72 @@
 		}
 	}
 
-	/* Screen glow pulse - ambient light from the "projector" */
-	@keyframes screen-breathe {
-		0%,
-		100% {
-			opacity: 0.5;
-		}
-		50% {
-			opacity: 0.7;
-		}
-	}
-
-	.screen-glow {
-		animation: screen-breathe 8s ease-in-out infinite;
-	}
-
-	/* Status dot pulse */
+	/* Status dot pulse - kept slow and single-layered; a bright fast pulse in
+	   the corner pulls the eye off the screen */
 	@keyframes status-pulse {
 		0%,
 		100% {
-			box-shadow:
-				0 0 4px currentColor,
-				0 0 8px currentColor;
+			box-shadow: 0 0 4px currentColor;
 		}
 		50% {
-			box-shadow:
-				0 0 6px currentColor,
-				0 0 12px currentColor;
+			box-shadow: 0 0 7px currentColor;
 		}
 	}
 
 	.status-live {
-		animation: status-pulse 2s ease-in-out infinite;
+		animation: status-pulse 4s ease-in-out infinite;
+	}
+
+	/* Custom scrollbar - a gold hairline on a transparent track, not a grey
+	   chrome gutter.
+	 *
+	 * Split by engine on purpose. Where both are declared Chromium takes the
+	 * standard `scrollbar-*` properties and ignores the pseudo-elements, which
+	 * costs us exact width and leaves the native stepper arrows in place. So the
+	 * standard properties are fenced behind a query that only matches engines
+	 * without ::-webkit-scrollbar (Firefox), letting Chromium and Safari use the
+	 * pseudo-elements and render the bar with no steppers. */
+	@supports not selector(::-webkit-scrollbar) {
+		.theater-scrollbar {
+			scrollbar-width: thin;
+			scrollbar-color: oklch(0.76 0.1 75 / 0.3) transparent;
+		}
+	}
+	.theater-scrollbar::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+	}
+	.theater-scrollbar::-webkit-scrollbar-track,
+	.theater-scrollbar::-webkit-scrollbar-corner {
+		background: transparent;
+	}
+	.theater-scrollbar::-webkit-scrollbar-thumb {
+		background: oklch(0.76 0.1 75 / 0.3);
+		border-radius: 3px;
+	}
+	.theater-scrollbar::-webkit-scrollbar-thumb:hover {
+		background: oklch(0.76 0.1 75 / 0.55);
+	}
+}
+
+/* Ambient motion is decorative and never stops, so it's the motion that
+   actually needs gating. One-shot state transitions (--edge, the controls
+   autohide) are left alone: they're brief, user-triggered, and carry meaning. */
+@media (prefers-reduced-motion: reduce) {
+	/* Hidden rather than paused - a frozen dust field is just stray dots, since
+	   the particles' resting keyframe is off-screen. */
+	.dust-particle {
+		display: none;
+	}
+
+	.status-live {
+		animation: none;
+	}
+
+	/* The spinner is a functional state indicator, not decoration, so it's
+	   slowed rather than stopped - it still reads as "working". */
+	.animate-spin {
+		animation-duration: 2.4s;
 	}
 }
 
@@ -164,7 +212,7 @@ input[type="range"].volume-slider {
 	-webkit-appearance: none;
 	appearance: none;
 	height: 3px;
-	background: oklch(1 0 0 / 0.15);
+	background: oklch(0.76 0.1 75 / 0.14);
 	border-radius: 2px;
 	outline: none;
 	cursor: pointer;
@@ -185,16 +233,13 @@ input[type="range"].volume-slider::-webkit-slider-thumb {
 	   line show through the thumb */
 	background: var(--color-theater-muted);
 	cursor: pointer;
-	box-shadow: 0 0 4px oklch(1 0 0 / 0.1);
 	transition:
 		background 0.2s ease,
-		box-shadow 0.2s ease,
 		transform 0.15s ease;
 }
 
 input[type="range"].volume-slider:hover::-webkit-slider-thumb {
 	background: var(--color-theater-gold);
-	box-shadow: 0 0 8px oklch(0.76 0.1 75 / 0.4);
 	transform: scale(1.2);
 }
 
@@ -207,20 +252,16 @@ input[type="range"].volume-slider::-moz-range-thumb {
 	background: var(--color-theater-muted);
 	cursor: pointer;
 	border: none;
-	box-shadow: 0 0 4px oklch(1 0 0 / 0.1);
-	transition:
-		background 0.2s ease,
-		box-shadow 0.2s ease;
+	transition: background 0.2s ease;
 }
 
 input[type="range"].volume-slider:hover::-moz-range-thumb {
 	background: var(--color-theater-gold);
-	box-shadow: 0 0 8px oklch(0.76 0.1 75 / 0.4);
 }
 
 input[type="range"].volume-slider::-moz-range-track {
 	height: 3px;
-	background: oklch(1 0 0 / 0.15);
+	background: oklch(0.76 0.1 75 / 0.14);
 	border-radius: 2px;
 	transition: background 0.2s ease;
 }

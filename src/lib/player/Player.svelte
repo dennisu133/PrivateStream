@@ -7,6 +7,8 @@
 	import FullscreenToggle from "./controls/FullscreenToggle.svelte";
 	import { startWhep } from "./actions/whep";
 	import { resizable } from "$lib/attachments/resizable.svelte";
+	import FrameBrackets from "$lib/components/FrameBrackets.svelte";
+	import StatusBar from "$lib/components/StatusBar.svelte";
 	import {
 		getStreamStatus,
 		setConnectionState,
@@ -69,36 +71,30 @@
 
 <!-- Cinema screen -->
 <div
-	class="relative w-[72vw] max-w-[min(90vw,calc((82vh-4rem)*16/9))] min-w-80 p-0 min-[448px]:p-3"
+	class="relative w-[72vw] max-w-[min(90vw,calc((82vh-4rem)*16/9))] min-w-80 p-0 transition-[--edge] duration-700 ease-cinema min-[448px]:p-3"
+	style:--edge={isLive ? 0.55 : 0.22}
 	aria-label="Live stream player"
 	aria-busy={!isLive}
-	{@attach resizable()}
+	{@attach resizable({ surfaceSelector: "[data-resize-surface]" })}
 >
-	<!-- Ambient glow behind the screen -->
-	<div
-		class="pointer-events-none absolute -inset-8 -z-10 rounded-sm blur-3xl transition-opacity duration-1000"
-		class:opacity-70={isLive}
-		class:opacity-40={!isLive}
-		style="background: radial-gradient(ellipse at center, oklch(0.4 0.08 250 / 0.3) 0%, oklch(0.28 0.06 250 / 0.1) 50%, transparent 75%);"
-		aria-hidden="true"
-	></div>
-
-	<!-- Inner content - cursor reset to prevent resize cursor inheritance -->
-	<div class="cursor-default">
-		<!-- Top bezel -->
+	<!-- Inner content - cursor reset to prevent resize cursor inheritance. This
+	     wrapper is exactly the rules + frame, because it's what the brackets
+	     anchor to; the status line below sits outside it. -->
+	<div data-resize-surface class="relative cursor-default">
+		<!-- Letterbox rule. 1px tall, so its horizontal fade spans far too little
+		     area to quantise into bands. -->
 		<div
-			class="h-[3px] w-full rounded-t-sm"
-			style="background: linear-gradient(to right, transparent 5%, oklch(0.76 0.1 75 / 0.15) 20%, oklch(0.76 0.1 75 / 0.3) 50%, oklch(0.76 0.1 75 / 0.15) 80%, transparent 95%);"
+			class="h-px w-full"
+			style="background: linear-gradient(to right, transparent 4%, oklch(0.76 0.1 75 / var(--edge)) 22%, oklch(0.76 0.1 75 / var(--edge)) 78%, transparent 96%);"
 			aria-hidden="true"
 		></div>
 
-		<!-- Video frame -->
+		<!-- Video frame. No drop shadow: over a true-black room a black shadow is
+		     literally invisible, and a coloured one is what was banding. The frame
+		     is defined by its hairline instead. -->
 		<div
 			id="player-frame"
-			class="@container-[size] relative aspect-video bg-black transition-shadow duration-700"
-			style:box-shadow={isLive
-				? "0 0 80px -10px oklch(0.4 0.08 250 / 0.35), 0 4px 40px -5px oklch(0 0 0 / 0.9)"
-				: "0 0 60px -15px oklch(0.4 0.08 250 / 0.2), 0 4px 30px -5px oklch(0 0 0 / 0.8)"}
+			class="@container-size relative aspect-video bg-black ring-1 ring-theater-gold/10 ring-inset"
 			bind:this={frameEl}
 		>
 			<!-- Demo src/loop live in the markup (not onMount) so the SSR HTML carries
@@ -138,11 +134,23 @@
 			</PlayerButtons>
 		</div>
 
-		<!-- Bottom bezel -->
+		<!-- Bottom rule, carried at two thirds the top's weight so the frame reads
+		     lit from above -->
 		<div
-			class="h-[3px] w-full rounded-b-sm"
-			style="background: linear-gradient(to right, transparent 5%, oklch(0.76 0.1 75 / 0.1) 20%, oklch(0.76 0.1 75 / 0.2) 50%, oklch(0.76 0.1 75 / 0.1) 80%, transparent 95%);"
+			class="h-px w-full"
+			style="background: linear-gradient(to right, transparent 4%, oklch(0.76 0.1 75 / calc(var(--edge) * 0.66)) 22%, oklch(0.76 0.1 75 / calc(var(--edge) * 0.66)) 78%, transparent 96%);"
 			aria-hidden="true"
 		></div>
+
+		<FrameBrackets />
+	</div>
+
+	<!-- The status line is a gate label on the frame, not page chrome: it now
+	     tracks the player when it's resized, and needs no box of its own because
+	     the frame above already separates it from the room. It sits inside the
+	     resizable element but is not part of the resize surface, hence the
+	     marker; the cursor reset keeps the resize cursor off it. -->
+	<div class="cursor-default">
+		<StatusBar />
 	</div>
 </div>

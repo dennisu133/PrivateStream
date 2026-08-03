@@ -121,21 +121,21 @@
 
 <div
 	bind:this={containerEl}
-	class="flex min-h-0 w-full flex-col overflow-hidden rounded-md bg-black/80 shadow-lg backdrop-blur-sm"
+	class="flex min-h-0 w-full flex-col overflow-hidden rounded-md border border-theater-gold/12 bg-black/85 backdrop-blur-sm"
 >
 	{#if reactions.length > 0}
 		<div
 			role="listbox"
 			tabindex="0"
-			class="grid min-h-0 auto-rows-max grid-cols-3 gap-2 overflow-y-auto p-3 outline-hidden"
+			class="theater-scrollbar grid min-h-0 auto-rows-max grid-cols-3 gap-2 overflow-y-auto p-3 outline-hidden"
 			bind:this={menuEl}
 			onkeydown={handleMenuKeydown}
 		>
 			{#each reactions as r, i (r.id)}
 				<button
 					type="button"
-					class="flex cursor-pointer flex-col gap-1.5 rounded-sm border border-white/10 bg-white/5 p-2 leading-tight text-white hover:bg-white/10
-						{i === selectedIndex ? 'bg-white/10 ring-2 ring-white/70' : ''}"
+					class="flex cursor-pointer flex-col gap-1.5 rounded-sm border border-theater-gold/12 bg-theater-gold/5 p-2 leading-tight text-theater-paper hover:bg-theater-gold/10
+						{i === selectedIndex ? 'bg-theater-gold/10 ring-2 ring-theater-gold/70' : ''}"
 					onclick={(e) => {
 						e.stopPropagation();
 						onInteract?.();

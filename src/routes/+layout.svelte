@@ -14,13 +14,13 @@
 	const isBoring = $derived(page.url.pathname === "/boring");
 
 	// Generate dust particles with varied properties
-	const particles = Array.from({ length: 18 }, (_, i) => ({
+	const particles = Array.from({ length: 10 }, (_, i) => ({
 		id: i,
 		left: `${Math.random() * 100}%`,
 		size: `${1 + Math.random() * 2.5}px`,
 		duration: `${12 + Math.random() * 20}s`,
 		delay: `${-Math.random() * 20}s`,
-		opacity: 0.15 + Math.random() * 0.35,
+		opacity: 0.1 + Math.random() * 0.2,
 		alt: i % 3 === 0
 	}));
 </script>
@@ -36,18 +36,11 @@
 	<meta property="og:image" content={image} />
 </svelte:head>
 
-<div
-	class="relative h-screen w-screen overflow-hidden"
-	class:film-grain={!isBoring}
-	class:theater-vignette={!isBoring}
->
+<div class="relative h-screen w-screen overflow-hidden" class:film-grain={!isBoring}>
 	{#if !isBoring}
-		<!-- Ambient screen glow - projected onto the "ceiling/walls" -->
-		<div
-			class="screen-glow pointer-events-none absolute top-[10%] left-1/2 h-[60%] w-[50%] -translate-x-1/2 rounded-full opacity-50 blur-[120px]"
-			style="background: radial-gradient(ellipse, oklch(0.4 0.08 250 / 0.3) 0%, oklch(0.28 0.06 250 / 0.1) 50%, transparent 70%);"
-			aria-hidden="true"
-		></div>
+		<!-- No ambient light layer here by design: the room is true black, so on
+		     OLED the panel itself is the dark theater. Grain and dust are the only
+		     atmosphere, and both are hard-edged. -->
 
 		<!-- Projector dust particles -->
 		<div class="pointer-events-none absolute inset-0 z-10" aria-hidden="true">

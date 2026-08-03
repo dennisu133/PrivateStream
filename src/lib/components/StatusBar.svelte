@@ -1,5 +1,5 @@
 <script lang="ts">
-	import StatusIndicator from "$lib/player/StatusIndicator.svelte";
+	import StatusIndicator from "$lib/components/StatusIndicator.svelte";
 	import { getConnectionIndicator, getStreamIndicator } from "$lib/types";
 	import { getConnectionState, getStreamStatus } from "$lib/state/connection.svelte";
 
@@ -8,14 +8,16 @@
 </script>
 
 <div
-	class="fixed bottom-5 left-5 z-60 flex items-center gap-4 rounded-sm border border-theater-border bg-theater-dark/90 px-4 py-2.5 font-mono text-xs tracking-wider backdrop-blur-sm"
+	class="mt-5 flex items-center gap-4 px-1 font-mono text-xs tracking-wider"
 	role="status"
 	aria-live="polite"
 	aria-atomic="true"
 >
 	<StatusIndicator state={connectionIndicator.state} label={connectionIndicator.label} />
 	{#if connectionIndicator.state === "ok"}
-		<span class="h-3 w-px bg-theater-border" aria-hidden="true"></span>
+		<!-- Cap-height too, so the divider matches the LEDs and the type -->
+		<span class="h-[0.75em] w-px translate-y-[-0.042em] bg-theater-border" aria-hidden="true"
+		></span>
 		<StatusIndicator state={streamIndicator.state} label={streamIndicator.label} />
 	{/if}
 </div>

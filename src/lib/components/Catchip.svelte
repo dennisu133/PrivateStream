@@ -31,7 +31,7 @@
 			decoding="async"
 			src={catchipGif}
 			alt="cat eating chips"
-			class="opacity-70 drop-shadow-[0_0_8px_oklch(0_0_0/0.5)]"
+			class="opacity-70"
 			width="112"
 			height="112"
 		/>
