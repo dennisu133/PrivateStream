@@ -10,11 +10,14 @@
 	const description =
 		import.meta.env.VITE_META_DESCRIPTION || "Private livestream viewer for friend groups.";
 	const color = import.meta.env.VITE_META_COLOR || "#E4B583";
-	const image = import.meta.env.VITE_META_IMAGE || "/meta.gif";
 
-	// No sensible static default for the canonical URL; the request's own is closer
-	// than a placeholder.
-	const url = $derived(import.meta.env.VITE_META_URL || page.url.href);
+	// og:url must be this page's own canonical URL, so take the public origin from
+	// the env and the path from the request. Without the env var the request's
+	// origin is the best guess, and it is correct as long as ORIGIN is configured.
+	const origin = $derived(import.meta.env.VITE_META_URL || page.url.origin);
+	const url = $derived(new URL(page.url.pathname, origin).href);
+	// og:image has to be absolute; an already-absolute env value passes through.
+	const image = $derived(new URL(import.meta.env.VITE_META_IMAGE || "/meta.gif", origin).href);
 
 	const isBoring = $derived(
 		page.url.pathname === "/boring" ||
