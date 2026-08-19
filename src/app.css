@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Measured metrics for the face below, at any size: cap height 0.75em, ascent 1em,
+   descent 0.3333em (so ascent + descent = 1.333em). StatusBar derives its LED and
+   divider alignment offsets from these three numbers.
+   CSS `1cap` is not a substitute: it reports the declared sCapHeight, 0.729em,
+   which is a quarter pixel short of the rendered glyph at 12px. */
 @font-face {
 	font-family: "JetBrains Mono";
 	font-style: normal;
