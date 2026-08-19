@@ -75,7 +75,6 @@ If you want to deploy on a VPS you will need:
 - build/ directory
 - package.json
 - .env file
-- pm2_bun_workaround/ directory (if deploying with bun)
 
 Install the production dependencies with `bun install --production` and run the application with `bun run --env-file=.env build/index.js`
 
@@ -131,11 +130,12 @@ For persistent hosting I recommend using [PM2](https://pm2.keymetrics.io/). This
 
 The app exposes an unauthenticated liveness probe at `/healthz` (returns `200 ok`). Point your uptime monitor at it to distinguish "process running" from "app actually serving requests". It does not check SRS or the stream itself.
 
-Currently there is a bug when running Sveltekit + bun + pm2. For more information check out [pm2_bun_workaround/](/pm2_bun_workaround/README.md).
+> [!NOTE]
+> PM2's Bun interpreter cannot currently start this async ESM build directly ([upstream issue](https://github.com/oven-sh/bun/issues/19942)). Run Bun as an executable with PM2's interpreter disabled instead.
 
 1. Install globally using `bun install pm2 -g`
 2. Link bun as node using `ln -s $(which bun) /usr/local/bin/node`
-3. Start the application using `pm2 start pm2_bun_workaround/ecosystem.config.mjs`
+3. Start the application using `pm2 start "$(which bun)" --name privatestream --interpreter none -- build/index.js`
 4. Enable autostart using `pm2 startup`
 5. Save the configuration using `pm2 save`
 
