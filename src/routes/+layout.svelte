@@ -36,14 +36,17 @@
 	<meta property="og:image" content={image} />
 </svelte:head>
 
-<div class="relative h-screen w-screen overflow-hidden" class:film-grain={!isBoring}>
+<div
+	class="relative isolate h-screen w-screen overflow-hidden bg-theater-black"
+	class:film-grain={!isBoring}
+>
 	{#if !isBoring}
 		<!-- No ambient light layer here by design: the room is true black, so on
 		     OLED the panel itself is the dark theater. Grain and dust are the only
 		     atmosphere, and both are hard-edged. -->
 
 		<!-- Projector dust particles -->
-		<div class="pointer-events-none absolute inset-0 z-10" aria-hidden="true">
+		<div class="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
 			{#each particles as p (p.id)}
 				<div
 					class="dust-particle"
@@ -61,7 +64,7 @@
 		</div>
 	{/if}
 
-	<main class="relative z-55 flex h-full w-full items-center justify-center">
+	<main class="relative z-10 flex h-full w-full items-center justify-center">
 		{@render children?.()}
 	</main>
 </div>

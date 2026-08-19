@@ -43,7 +43,7 @@
 
 				<button
 					type="submit"
-					class="group relative cursor-pointer overflow-hidden rounded-sm border border-theater-gold/20 bg-theater-gold/8 px-4 py-3 font-mono text-xs font-medium tracking-[0.15em] text-theater-gold uppercase transition-all duration-300 hover:border-theater-gold/40 hover:bg-theater-gold/12"
+					class="group relative cursor-pointer overflow-hidden rounded-sm border border-theater-gold/20 bg-theater-black px-4 py-3 font-mono text-xs font-medium tracking-[0.15em] text-theater-gold uppercase transition-all duration-300 before:absolute before:inset-0 before:bg-theater-gold/8 before:transition-colors before:duration-300 before:content-[''] hover:border-theater-gold/40 hover:before:bg-theater-gold/12"
 				>
 					<span class="relative z-10">Enter</span>
 				</button>
