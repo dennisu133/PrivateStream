@@ -9,11 +9,7 @@
 
 <div class="flex flex-col items-center">
 	<div class="relative w-full max-w-xs" style:--edge="0.42" class:ticket-shake={!!form?.error}>
-		<div
-			class="h-px w-full"
-			style="background: linear-gradient(to right, transparent 4%, oklch(0.76 0.1 75 / var(--edge)) 22%, oklch(0.76 0.1 75 / var(--edge)) 78%, transparent 96%);"
-			aria-hidden="true"
-		></div>
+		<div class="h-px w-full frame-edge" aria-hidden="true"></div>
 
 		<div class="px-8 py-9">
 			<h1
@@ -42,11 +38,7 @@
 			</form>
 		</div>
 
-		<div
-			class="h-px w-full"
-			style="background: linear-gradient(to right, transparent 4%, oklch(0.76 0.1 75 / calc(var(--edge) * 0.66)) 22%, oklch(0.76 0.1 75 / calc(var(--edge) * 0.66)) 78%, transparent 96%);"
-			aria-hidden="true"
-		></div>
+		<div class="h-px w-full frame-edge" style:--edge-scale="0.66" aria-hidden="true"></div>
 
 		<FrameBrackets size={16} />
 

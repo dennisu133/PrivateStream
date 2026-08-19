@@ -145,3 +145,29 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	/* Firefox uses standard properties. Chromium and Safari need pseudo-elements
+	   for a 6px bar without stepper buttons. */
+	@supports not selector(::-webkit-scrollbar) {
+		.theater-scrollbar {
+			scrollbar-width: thin;
+			scrollbar-color: color-mix(in oklch, var(--color-theater-gold) 30%, transparent) transparent;
+		}
+	}
+	.theater-scrollbar::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+	}
+	.theater-scrollbar::-webkit-scrollbar-track,
+	.theater-scrollbar::-webkit-scrollbar-corner {
+		background: transparent;
+	}
+	.theater-scrollbar::-webkit-scrollbar-thumb {
+		background: color-mix(in oklch, var(--color-theater-gold) 30%, transparent);
+		border-radius: 3px;
+	}
+	.theater-scrollbar::-webkit-scrollbar-thumb:hover {
+		background: color-mix(in oklch, var(--color-theater-gold) 55%, transparent);
+	}
+</style>

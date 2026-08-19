@@ -189,7 +189,7 @@
 	</Button>
 
 	<input
-		class="volume-slider w-30 accent-white"
+		class="w-30"
 		type="range"
 		min="0"
 		max="1"
@@ -204,3 +204,64 @@
 		aria-valuetext={volumeText}
 	/>
 </div>
+
+<style>
+	input[type="range"] {
+		-webkit-appearance: none;
+		appearance: none;
+		height: 3px;
+		background: color-mix(in oklch, var(--color-theater-gold) 14%, transparent);
+		border-radius: 2px;
+		outline: none;
+		cursor: pointer;
+		transition: background 0.2s ease;
+	}
+
+	input[type="range"]:hover {
+		background: color-mix(in oklch, var(--color-theater-gold) 30%, transparent);
+	}
+
+	input[type="range"]::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		appearance: none;
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		/* Keep the thumb opaque so the track does not show through. */
+		background: var(--color-theater-muted);
+		cursor: pointer;
+		transition:
+			background 0.2s ease,
+			transform 0.15s ease;
+	}
+
+	input[type="range"]:hover::-webkit-slider-thumb {
+		background: var(--color-theater-gold);
+		transform: scale(1.2);
+	}
+
+	input[type="range"]::-moz-range-thumb {
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		background: var(--color-theater-muted);
+		cursor: pointer;
+		border: none;
+		transition: background 0.2s ease;
+	}
+
+	input[type="range"]:hover::-moz-range-thumb {
+		background: var(--color-theater-gold);
+	}
+
+	input[type="range"]::-moz-range-track {
+		height: 3px;
+		background: color-mix(in oklch, var(--color-theater-gold) 14%, transparent);
+		border-radius: 2px;
+		transition: background 0.2s ease;
+	}
+
+	input[type="range"]:hover::-moz-range-track {
+		background: color-mix(in oklch, var(--color-theater-gold) 30%, transparent);
+	}
+</style>

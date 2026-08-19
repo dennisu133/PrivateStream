@@ -38,3 +38,25 @@
 		{label}
 	</span>
 </span>
+
+<style>
+	.status-live {
+		animation: status-pulse 4s ease-in-out infinite;
+	}
+
+	@keyframes status-pulse {
+		0%,
+		100% {
+			box-shadow: 0 0 4px currentColor;
+		}
+		50% {
+			box-shadow: 0 0 7px currentColor;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.status-live {
+			animation: none;
+		}
+	}
+</style>

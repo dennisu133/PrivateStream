@@ -22,7 +22,6 @@
 		size: `${1 + Math.random() * 2.5}px`,
 		duration: `${12 + Math.random() * 20}s`,
 		delay: `${-Math.random() * 20}s`,
-		opacity: 0.1 + Math.random() * 0.2,
 		alt: i % 3 === 0
 	}));
 </script>
@@ -47,14 +46,13 @@
 			{#each particles as p (p.id)}
 				<div
 					class="dust-particle"
+					class:alt={p.alt}
 					style="
 						left: {p.left};
 						width: {p.size};
 						height: {p.size};
 						animation-duration: {p.duration};
 						animation-delay: {p.delay};
-						opacity: {p.opacity};
-						{p.alt ? 'animation-name: dust-float-alt;' : ''}
 					"
 				></div>
 			{/each}
@@ -65,3 +63,67 @@
 		{@render children?.()}
 	</main>
 </div>
+
+<style>
+	.film-grain::before {
+		content: "";
+		position: fixed;
+		inset: 0;
+		opacity: 0.05;
+		pointer-events: none;
+		z-index: 0;
+		background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+		background-size: 256px 256px;
+	}
+
+	.dust-particle {
+		position: absolute;
+		border-radius: 50%;
+		background: color-mix(in oklch, var(--color-theater-paper) 30%, transparent);
+		animation: dust-float linear infinite;
+	}
+
+	.dust-particle.alt {
+		animation-name: dust-float-alt;
+	}
+
+	@keyframes dust-float {
+		0% {
+			transform: translateY(100vh) translateX(0) scale(1);
+			opacity: 0;
+		}
+		10% {
+			opacity: 1;
+		}
+		90% {
+			opacity: 1;
+		}
+		100% {
+			transform: translateY(-10vh) translateX(30px) scale(0.5);
+			opacity: 0;
+		}
+	}
+
+	@keyframes dust-float-alt {
+		0% {
+			transform: translateY(100vh) translateX(0) rotate(0deg);
+			opacity: 0;
+		}
+		15% {
+			opacity: 0.8;
+		}
+		85% {
+			opacity: 0.6;
+		}
+		100% {
+			transform: translateY(-10vh) translateX(-20px) rotate(180deg);
+			opacity: 0;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.dust-particle {
+			display: none;
+		}
+	}
+</style>

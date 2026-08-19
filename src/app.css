@@ -17,7 +17,6 @@
 }
 
 @theme {
-	/* Keep Tailwind's sans utilities on the UI's monospace face. */
 	--font-display: "Playfair Display", serif;
 	--font-mono: "JetBrains Mono", monospace;
 	--font-sans: "JetBrains Mono", monospace;
@@ -33,13 +32,6 @@
 	--ease-cinema: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Register --edge so inherited frame opacity can transition. */
-@property --edge {
-	syntax: "<number>";
-	inherits: true;
-	initial-value: 0.22;
-}
-
 @layer base {
 	html {
 		color-scheme: dark;
@@ -52,173 +44,44 @@
 	}
 }
 
-@layer utilities {
-	.film-grain {
-		position: relative;
-	}
-	.film-grain::before {
-		content: "";
-		position: fixed;
-		inset: 0;
-		opacity: 0.05;
-		pointer-events: none;
-		z-index: 0;
-		background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-		background-size: 256px 256px;
-	}
-
-	.dust-particle {
-		position: absolute;
-		border-radius: 50%;
-		background: oklch(0.94 0.008 80 / 0.3);
-		pointer-events: none;
-		animation: dust-float linear infinite;
-	}
-
-	@keyframes dust-float {
-		0% {
-			transform: translateY(100vh) translateX(0) scale(1);
-			opacity: 0;
-		}
-		10% {
-			opacity: 1;
-		}
-		90% {
-			opacity: 1;
-		}
-		100% {
-			transform: translateY(-10vh) translateX(30px) scale(0.5);
-			opacity: 0;
-		}
-	}
-
-	@keyframes dust-float-alt {
-		0% {
-			transform: translateY(100vh) translateX(0) rotate(0deg);
-			opacity: 0;
-		}
-		15% {
-			opacity: 0.8;
-		}
-		85% {
-			opacity: 0.6;
-		}
-		100% {
-			transform: translateY(-10vh) translateX(-20px) rotate(180deg);
-			opacity: 0;
-		}
-	}
-
-	@keyframes status-pulse {
-		0%,
-		100% {
-			box-shadow: 0 0 4px currentColor;
-		}
-		50% {
-			box-shadow: 0 0 7px currentColor;
-		}
-	}
-
-	.status-live {
-		animation: status-pulse 4s ease-in-out infinite;
-	}
-
-	/* Firefox uses standard properties. Chromium and Safari need pseudo-elements
-	   for a 6px bar without stepper buttons. */
-	@supports not selector(::-webkit-scrollbar) {
-		.theater-scrollbar {
-			scrollbar-width: thin;
-			scrollbar-color: oklch(0.76 0.1 75 / 0.3) transparent;
-		}
-	}
-	.theater-scrollbar::-webkit-scrollbar {
-		width: 6px;
-		height: 6px;
-	}
-	.theater-scrollbar::-webkit-scrollbar-track,
-	.theater-scrollbar::-webkit-scrollbar-corner {
-		background: transparent;
-	}
-	.theater-scrollbar::-webkit-scrollbar-thumb {
-		background: oklch(0.76 0.1 75 / 0.3);
-		border-radius: 3px;
-	}
-	.theater-scrollbar::-webkit-scrollbar-thumb:hover {
-		background: oklch(0.76 0.1 75 / 0.55);
-	}
+/* Frame glow opacity. Typing it as a number lets it interpolate (so the glow can
+   transition instead of snapping); inheriting lets one value drive a whole frame. */
+@property --edge {
+	syntax: "<number>";
+	inherits: true;
+	initial-value: 0.22;
 }
 
-/* Stop looping decoration, but keep short state transitions. */
+/* The gold hairline above and below a frame. Both --edge and --edge-scale are read
+   per element, so a parent transitioning --edge fades every strip beneath it. */
+@utility frame-edge {
+	--edge-tint: color-mix(
+		in oklch,
+		var(--color-theater-gold) calc(var(--edge) * var(--edge-scale, 1) * 100%),
+		transparent
+	);
+	background: linear-gradient(
+		to right,
+		transparent 4%,
+		var(--edge-tint) 22%,
+		var(--edge-tint) 78%,
+		transparent 96%
+	);
+}
+
+/* Same gold at the same opacity, on the corner brackets. */
+@utility frame-bracket {
+	border-color: color-mix(
+		in oklch,
+		var(--color-theater-gold) calc(var(--edge) * 100%),
+		transparent
+	);
+}
+
+/* A frozen spinner reads as a hung UI, so slow it rather than stop it. Unlayered
+   on purpose: that is what outranks Tailwind's own animate-spin. */
 @media (prefers-reduced-motion: reduce) {
-	.dust-particle {
-		display: none;
-	}
-
-	.status-live {
-		animation: none;
-	}
-
-	/* Keep the loading indicator moving, but slow it down. */
 	.animate-spin {
 		animation-duration: 2.4s;
 	}
-}
-
-input[type="range"].volume-slider {
-	-webkit-appearance: none;
-	appearance: none;
-	height: 3px;
-	background: oklch(0.76 0.1 75 / 0.14);
-	border-radius: 2px;
-	outline: none;
-	cursor: pointer;
-	transition: background 0.2s ease;
-}
-
-input[type="range"].volume-slider:hover {
-	background: oklch(0.76 0.1 75 / 0.3);
-}
-
-input[type="range"].volume-slider::-webkit-slider-thumb {
-	-webkit-appearance: none;
-	appearance: none;
-	width: 10px;
-	height: 10px;
-	border-radius: 50%;
-	/* Keep the thumb opaque so the track does not show through. */
-	background: var(--color-theater-muted);
-	cursor: pointer;
-	transition:
-		background 0.2s ease,
-		transform 0.15s ease;
-}
-
-input[type="range"].volume-slider:hover::-webkit-slider-thumb {
-	background: var(--color-theater-gold);
-	transform: scale(1.2);
-}
-
-input[type="range"].volume-slider::-moz-range-thumb {
-	width: 10px;
-	height: 10px;
-	border-radius: 50%;
-	background: var(--color-theater-muted);
-	cursor: pointer;
-	border: none;
-	transition: background 0.2s ease;
-}
-
-input[type="range"].volume-slider:hover::-moz-range-thumb {
-	background: var(--color-theater-gold);
-}
-
-input[type="range"].volume-slider::-moz-range-track {
-	height: 3px;
-	background: oklch(0.76 0.1 75 / 0.14);
-	border-radius: 2px;
-	transition: background 0.2s ease;
-}
-
-input[type="range"].volume-slider:hover::-moz-range-track {
-	background: oklch(0.76 0.1 75 / 0.3);
 }

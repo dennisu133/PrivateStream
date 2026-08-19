@@ -1,4 +1,4 @@
-<!-- Inline sizing accepts arbitrary caller values; --edge inherits the frame opacity. -->
+<!-- Inline sizing accepts arbitrary caller values; frame-bracket inherits the frame opacity. -->
 
 <script lang="ts">
 	let { size = 20, inset = 8 }: { size?: number; inset?: number } = $props();
@@ -13,9 +13,8 @@
 
 {#each corners as [y, x, edges] (edges)}
 	<span
-		class="pointer-events-none absolute {edges}"
-		style="{y}: -{inset}px; {x}: -{inset}px; width: {size}px; height: {size}px;
-		       border-color: oklch(0.76 0.1 75 / var(--edge));"
+		class="pointer-events-none absolute frame-bracket {edges}"
+		style="{y}: -{inset}px; {x}: -{inset}px; width: {size}px; height: {size}px;"
 		aria-hidden="true"
 	></span>
 {/each}

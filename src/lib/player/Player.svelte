@@ -63,11 +63,7 @@
 >
 	<!-- The status bar follows this surface's width without affecting its aspect ratio. -->
 	<div data-resize-surface class="relative cursor-default">
-		<div
-			class="h-px w-full"
-			style="background: linear-gradient(to right, transparent 4%, oklch(0.76 0.1 75 / var(--edge)) 22%, oklch(0.76 0.1 75 / var(--edge)) 78%, transparent 96%);"
-			aria-hidden="true"
-		></div>
+		<div class="h-px w-full frame-edge" aria-hidden="true"></div>
 
 		<div
 			id="player-frame"
@@ -92,11 +88,7 @@
 			<PlayerControls frame={frameEl} video={videoEl} enableReactions={enableFunFeatures} />
 		</div>
 
-		<div
-			class="h-px w-full"
-			style="background: linear-gradient(to right, transparent 4%, oklch(0.76 0.1 75 / calc(var(--edge) * 0.66)) 22%, oklch(0.76 0.1 75 / calc(var(--edge) * 0.66)) 78%, transparent 96%);"
-			aria-hidden="true"
-		></div>
+		<div class="h-px w-full frame-edge" style:--edge-scale="0.66" aria-hidden="true"></div>
 
 		<FrameBrackets />
 	</div>
