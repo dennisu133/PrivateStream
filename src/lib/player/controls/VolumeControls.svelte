@@ -107,6 +107,9 @@
 
 	const handleKeydown = (event: KeyboardEvent) => {
 		if (disableGlobalInput) return;
+		// Leave modified combos to the browser and OS: Ctrl+Up is Mission Control,
+		// Cmd+M minimises, and neither should nudge the volume.
+		if (event.ctrlKey || event.metaKey || event.altKey) return;
 
 		const targetEl = event.target as HTMLElement | null;
 		if (targetEl?.matches("input, textarea, select, [contenteditable]")) {

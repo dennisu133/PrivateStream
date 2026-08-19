@@ -26,7 +26,7 @@
 	let activeReaction = $state<Reaction | null>(null);
 	let overlayTimer: ReturnType<typeof setTimeout> | null = null;
 
-	function dispatchAutohide(event: string) {
+	function dispatchAutohide(event: "autohide:hold" | "autohide:release") {
 		frame?.dispatchEvent(new CustomEvent(event, { bubbles: true }));
 	}
 
@@ -57,7 +57,10 @@
 
 	function handleKeydown(event: KeyboardEvent) {
 		if (!enableReactions) return;
-		if ((event.target as HTMLElement).matches("input, textarea, [contenteditable]")) return;
+		// Ctrl/Cmd+R is reload; without this the hotkey opens the menu and eats it.
+		if (event.ctrlKey || event.metaKey || event.altKey) return;
+		const target = event.target as HTMLElement | null;
+		if (target?.matches("input, textarea, select, [contenteditable]")) return;
 		if (event.key.toLowerCase() === "r") {
 			event.preventDefault();
 			toggleMenu();
@@ -95,12 +98,18 @@
 {/if}
 
 <div
-	class="pointer-events-auto absolute right-3 bottom-3 flex items-center gap-3 rounded-sm border border-theater-gold/12 bg-black/55 px-3 py-2 backdrop-blur-md transition-[opacity,transform] duration-300 ease-cinema data-[visible=false]:pointer-events-none data-[visible=false]:translate-y-2 data-[visible=false]:opacity-0"
+	class="absolute right-3 bottom-3 flex items-center gap-3 rounded-sm border border-theater-gold/12 bg-black/55 px-3 py-2 backdrop-blur-md transition-[opacity,translate] duration-300 ease-cinema data-[visible=false]:pointer-events-none data-[visible=false]:translate-y-2 data-[visible=false]:opacity-0"
 	{@attach autohide()}
 >
 	{#if enableReactions}
 		<span bind:this={toggleButtonEl}>
-			<Button label="Reactions (r)" title="Reactions (r)" pressed={menuOpen} onclick={toggleMenu}>
+			<Button
+				label="Reactions (r)"
+				title="Reactions (r)"
+				aria-haspopup="listbox"
+				aria-expanded={menuOpen}
+				onclick={toggleMenu}
+			>
 				<SmilePlus size={24} />
 			</Button>
 		</span>

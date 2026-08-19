@@ -18,9 +18,18 @@
 	let menuEl = $state<HTMLDivElement | null>(null);
 
 	$effect(() => {
-		if (menuEl) {
-			menuEl.focus();
-		}
+		if (!menuEl) return;
+		const opened = menuEl;
+		opened.focus();
+
+		return () => {
+			// Hand focus back to the trigger, but only if the menu still holds it:
+			// closing by clicking another control must not steal focus from it.
+			const active = document.activeElement;
+			if (active === opened || active === document.body) {
+				toggleButtonEl?.querySelector("button")?.focus();
+			}
+		};
 	});
 
 	$effect(() => {

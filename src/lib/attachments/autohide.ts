@@ -12,6 +12,7 @@ export function autohide(): Attachment<HTMLElement> {
 	return (element) => {
 		let pointerInside = false;
 		let holdDepth = 0;
+		let focusHeld = false;
 		let hideTimer: ReturnType<typeof setTimeout> | null = null;
 
 		const setVisible = (visible: boolean) => {
@@ -65,6 +66,24 @@ export function autohide(): Attachment<HTMLElement> {
 			scheduleHide();
 		};
 
+		// The bar stays in the tab order while transparent, so tabbing into it pins it
+		// open; without that it is unreachable without a pointer. Only keyboard focus
+		// counts: a click also focuses a control, and holding on that would keep the
+		// bar open until the user clicked something else.
+		const handleFocusIn = (e: FocusEvent) => {
+			const keyboard = (e.target as HTMLElement | null)?.matches(":focus-visible") ?? false;
+			if (keyboard === focusHeld) return;
+			focusHeld = keyboard;
+			if (keyboard) hold();
+			else release();
+		};
+
+		const handleFocusOut = () => {
+			if (!focusHeld) return;
+			focusHeld = false;
+			release();
+		};
+
 		const monitor = element.parentElement;
 		const pointerEvents = ["pointermove", "pointerdown", "wheel"] as const;
 
@@ -80,10 +99,8 @@ export function autohide(): Attachment<HTMLElement> {
 
 		element.addEventListener("pointerenter", handleControlsEnter);
 		element.addEventListener("pointerleave", handleControlsLeave);
-		// The bar stays in the tab order while transparent, so tabbing into it fires
-		// focusin and pins it open. Without this it is unreachable without a pointer.
-		element.addEventListener("focusin", hold);
-		element.addEventListener("focusout", release);
+		element.addEventListener("focusin", handleFocusIn);
+		element.addEventListener("focusout", handleFocusOut);
 
 		setVisible(true);
 		scheduleHide();
@@ -103,8 +120,8 @@ export function autohide(): Attachment<HTMLElement> {
 
 			element.removeEventListener("pointerenter", handleControlsEnter);
 			element.removeEventListener("pointerleave", handleControlsLeave);
-			element.removeEventListener("focusin", hold);
-			element.removeEventListener("focusout", release);
+			element.removeEventListener("focusin", handleFocusIn);
+			element.removeEventListener("focusout", handleFocusOut);
 		};
 	};
 }
