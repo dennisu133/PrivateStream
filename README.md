@@ -124,6 +124,14 @@ With Cloudflare as the only public route to the origin, use `ADDRESS_HEADER=cf-c
 
 Run a single PrivateStream process. Reactions, rate limits, and the public IP cache are stored in memory and are not shared between instances.
 
+### PM2
+
+PM2's Bun interpreter cannot currently start this async ESM build directly ([upstream issue](https://github.com/oven-sh/bun/issues/19942)). Run Bun as the executable and disable PM2's interpreter:
+
+```sh
+pm2 start "$(which bun)" --name privatestream --interpreter none -- build/index.js
+```
+
 `/healthz` is an unauthenticated liveness endpoint that returns `200 ok`. It checks the app, not SRS or the stream.
 
 ## Acknowledgements
