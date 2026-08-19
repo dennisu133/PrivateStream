@@ -88,8 +88,10 @@ export function createFixedWindowRateLimiter({
 	};
 }
 
+export const LOGIN_ATTEMPT_LIMIT = 5;
+
 export const loginRateLimiter = createFixedWindowRateLimiter({
 	windowMs: 60_000,
-	perKeyLimit: 5,
+	perKeyLimit: LOGIN_ATTEMPT_LIMIT,
 	globalLimit: 30
 });

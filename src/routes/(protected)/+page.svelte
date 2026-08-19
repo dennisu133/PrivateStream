@@ -3,13 +3,14 @@
 	import Player from "$lib/player/Player.svelte";
 	import Neko from "virtual:neko-widget";
 	import type { PageData } from "./$types";
+	import { privateTitle } from "$lib/meta";
 
 	let { data }: { data: PageData } = $props();
 	const boring = import.meta.env.BORING === "true";
 </script>
 
 <svelte:head>
-	<title>{import.meta.env.VITE_META_TITLE_PRIVATE}</title>
+	<title>{privateTitle}</title>
 </svelte:head>
 
 <Player enableFunFeatures={!boring && data.reactionsEnabled} />

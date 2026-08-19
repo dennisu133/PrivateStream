@@ -7,7 +7,7 @@ import {
 	SESSION_COOKIE_NAME,
 	SESSION_COOKIE_OPTIONS
 } from "$lib/server/auth";
-import { loginRateLimiter } from "$lib/server/rate-limit";
+import { LOGIN_ATTEMPT_LIMIT, loginRateLimiter } from "$lib/server/rate-limit";
 import type { Actions, PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -39,12 +39,16 @@ export const actions: Actions = {
 		}
 
 		const rateLimit = loginRateLimiter.consume(clientAddress);
+		const rateLimitHeaders = {
+			"RateLimit-Limit": LOGIN_ATTEMPT_LIMIT.toString(),
+			"RateLimit-Reset": Math.ceil(rateLimit.resetAt / 1000).toString()
+		};
+
 		if (!rateLimit.allowed) {
 			setHeaders({
-				"Retry-After": rateLimit.retryAfterSeconds.toString(),
-				"RateLimit-Limit": "5",
+				...rateLimitHeaders,
 				"RateLimit-Remaining": "0",
-				"RateLimit-Reset": Math.ceil(rateLimit.resetAt / 1000).toString()
+				"Retry-After": rateLimit.retryAfterSeconds.toString()
 			});
 			return fail(429, {
 				error: `Too many login attempts. Try again in ${rateLimit.retryAfterSeconds} seconds.`
@@ -52,9 +56,8 @@ export const actions: Actions = {
 		}
 
 		setHeaders({
-			"RateLimit-Limit": "5",
-			"RateLimit-Remaining": rateLimit.remaining.toString(),
-			"RateLimit-Reset": Math.ceil(rateLimit.resetAt / 1000).toString()
+			...rateLimitHeaders,
+			"RateLimit-Remaining": rateLimit.remaining.toString()
 		});
 
 		const passwordHash = Buffer.from(passwordHashBase64, "base64").toString();

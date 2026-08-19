@@ -2,10 +2,11 @@
 	import Catchip from "virtual:catchip-widget";
 	import Player from "$lib/player/Player.svelte";
 	import Neko from "virtual:neko-widget";
+	import { publicTitle } from "$lib/meta";
 </script>
 
 <svelte:head>
-	<title>{import.meta.env.VITE_META_TITLE_PUBLIC} — Demo</title>
+	<title>{publicTitle} — Demo</title>
 	<meta name="robots" content="noindex" />
 </svelte:head>
 
