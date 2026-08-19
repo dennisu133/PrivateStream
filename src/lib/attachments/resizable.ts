@@ -6,20 +6,14 @@ export type ResizableOptions = {
 };
 
 type Edge =
-	| "top"
-	| "right"
-	| "bottom"
-	| "left"
-	| "top-left"
-	| "top-right"
-	| "bottom-left"
-	| "bottom-right"
-	| null;
+	"top" | "right" | "bottom" | "left" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
 const EDGE_THRESHOLD = 12;
+// Above the padding-ring breakpoint (min-[448px]:p-3) by design: the handles are
+// that ring, and at p-0 no pointer event ever targets the element itself.
 const DESKTOP_QUERY = "(min-width: 900px)";
 
-const CURSOR_MAP: Record<NonNullable<Edge>, string> = {
+const CURSOR_MAP: Record<Edge, string> = {
 	top: "ns-resize",
 	bottom: "ns-resize",
 	left: "ew-resize",
@@ -36,15 +30,19 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 
 	return (element) => {
 		let isResizable = false;
-		let activeEdge: Edge = null;
+		let activeEdge: Edge | null = null;
 		let dragStartX = 0;
 		let dragStartY = 0;
 		let dragStartWidth = 0;
 		let dragAspectRatio = 1;
+		// Constraints derive from the viewport only, so they hold for a whole drag.
+		// Recomputing per pointermove costs a getComputedStyle and two layout reads.
+		let dragConstraints: { min: number; max: number } | null = null;
 
 		const isFullscreen = () => document.fullscreenElement !== null;
 
 		// Include the padding ring but exclude trailing content such as the status bar.
+		// The extra threshold keeps the bottom handle grabbable below the surface.
 		const getSurfaceHeight = (rect: DOMRect) => {
 			const surface = surfaceSelector ? element.querySelector(surfaceSelector) : null;
 			if (!surface) return rect.height;
@@ -57,7 +55,7 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 			return height > 0 ? rect.width / height : 1;
 		};
 
-		const getConstraints = () => {
+		const getConstraints = (aspectRatio = getAspectRatio()) => {
 			const style = getComputedStyle(element);
 			const minWidth = parseFloat(style.minWidth) || 0;
 			let maxWidth = parseFloat(style.maxWidth);
@@ -65,7 +63,6 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 
 			// Keep the surface within 90% of the viewport height.
 			const availableHeight = window.innerHeight * 0.9;
-			const aspectRatio = getAspectRatio();
 			const maxFromHeight = availableHeight * aspectRatio;
 
 			return {
@@ -75,7 +72,7 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 		};
 
 		const clampWidth = (value: number) => {
-			const { min, max } = getConstraints();
+			const { min, max } = dragConstraints ?? getConstraints();
 			return Math.min(Math.max(value, min), max);
 		};
 
@@ -87,7 +84,7 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 			}
 		};
 
-		const updateCursor = (edge: Edge) => {
+		const updateCursor = (edge: Edge | null) => {
 			if (edge && isResizable) {
 				element.style.cursor = CURSOR_MAP[edge];
 				setDataAttr("resize-edge", edge);
@@ -99,6 +96,8 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 
 		const enforceBounds = () => {
 			if (!isResizable || !element.style.width) return;
+			// The viewport moved, so a frozen drag constraint is now stale.
+			if (dragConstraints) dragConstraints = getConstraints();
 			const currentWidth = element.getBoundingClientRect().width;
 			const clampedWidth = clampWidth(currentWidth);
 			if (Math.abs(currentWidth - clampedWidth) > 1) {
@@ -106,7 +105,7 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 			}
 		};
 
-		const getEdgeFromPosition = (clientX: number, clientY: number): Edge => {
+		const getEdgeFromPosition = (clientX: number, clientY: number): Edge | null => {
 			const rect = element.getBoundingClientRect();
 			const x = clientX - rect.left;
 			const y = clientY - rect.top;
@@ -134,6 +133,9 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 
 		const handlePointerDown = (e: PointerEvent) => {
 			if (!isResizable || isFullscreen() || e.target !== element) return;
+			// Primary button only: a right-drag would resize instead of opening the
+			// context menu, and its pointerup can be swallowed, wedging the drag.
+			if (e.button !== 0 || !e.isPrimary) return;
 
 			const edge = getEdgeFromPosition(e.clientX, e.clientY);
 			if (!edge) return;
@@ -144,9 +146,9 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 			dragStartY = e.clientY;
 			dragStartWidth = element.getBoundingClientRect().width;
 			dragAspectRatio = getAspectRatio();
+			dragConstraints = getConstraints(dragAspectRatio);
 
 			setDataAttr("resizing", "true");
-			element.style.touchAction = "none";
 			element.setPointerCapture(e.pointerId);
 		};
 
@@ -177,8 +179,6 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 					case "top":
 						newWidth = dragStartWidth - deltaY * dragAspectRatio;
 						break;
-					default:
-						return;
 				}
 
 				element.style.width = `${clampWidth(newWidth)}px`;
@@ -192,8 +192,8 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 
 			element.releasePointerCapture(e.pointerId);
 			activeEdge = null;
+			dragConstraints = null;
 			setDataAttr("resizing", null);
-			element.style.touchAction = "";
 
 			updateCursor(getEdgeFromPosition(e.clientX, e.clientY));
 		};

@@ -2,7 +2,7 @@
 	import { onMount } from "svelte";
 	import PlayerControls from "./PlayerControls.svelte";
 	import { startWhep } from "./actions/whep";
-	import { resizable } from "$lib/attachments/resizable.svelte";
+	import { resizable } from "$lib/attachments/resizable";
 	import FrameBrackets from "$lib/components/FrameBrackets.svelte";
 	import StatusBar from "$lib/components/StatusBar.svelte";
 	import { connection } from "$lib/state/connection.svelte";
