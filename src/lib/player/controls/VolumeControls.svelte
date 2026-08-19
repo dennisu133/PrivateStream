@@ -177,7 +177,6 @@
 	<Button
 		label={isMuted ? "Unmute" : "Mute"}
 		title={(isMuted ? "Unmute" : "Mute") + " (m)"}
-		pressed={isMuted}
 		onclick={toggleMute}
 	>
 		{#if isMuted}

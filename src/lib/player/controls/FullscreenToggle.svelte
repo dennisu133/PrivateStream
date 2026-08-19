@@ -10,10 +10,11 @@
 	} = $props();
 
 	let isFullscreen = $state(false);
-	let containerEl = $state<HTMLElement | null>(null);
 
 	const dispatchShow = () => {
-		containerEl?.dispatchEvent(new CustomEvent("autohide:show", { bubbles: true }));
+		// target is the frame, which is the autohide monitor, so this lands on its
+		// listener directly; from anything nested it still bubbles up to the same one.
+		target?.dispatchEvent(new CustomEvent("autohide:show", { bubbles: true }));
 	};
 
 	const syncFullscreen = () => {
@@ -37,6 +38,8 @@
 	};
 
 	const handleKeydown = (event: KeyboardEvent) => {
+		// Ctrl/Cmd+F is find-in-page; without this the hotkey swallows it.
+		if (event.ctrlKey || event.metaKey || event.altKey) return;
 		if (event.key !== "f" && event.key !== "F") return;
 
 		const targetEl = event.target as HTMLElement | null;
@@ -58,17 +61,14 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<span bind:this={containerEl}>
-	<Button
-		label={isFullscreen ? "Exit full screen" : "Full screen"}
-		title={(isFullscreen ? "Exit full screen" : "Full screen") + " (f)"}
-		pressed={isFullscreen}
-		onclick={toggleFullscreen}
-	>
-		{#if isFullscreen}
-			<Minimize size={24} strokeWidth={2} aria-hidden="true" />
-		{:else}
-			<Maximize size={24} strokeWidth={2} aria-hidden="true" />
-		{/if}
-	</Button>
-</span>
+<Button
+	label={isFullscreen ? "Exit full screen" : "Full screen"}
+	title={(isFullscreen ? "Exit full screen" : "Full screen") + " (f)"}
+	onclick={toggleFullscreen}
+>
+	{#if isFullscreen}
+		<Minimize size={24} strokeWidth={2} aria-hidden="true" />
+	{:else}
+		<Maximize size={24} strokeWidth={2} aria-hidden="true" />
+	{/if}
+</Button>
