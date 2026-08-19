@@ -3,43 +3,39 @@
 
 	import spriteSheet from "$lib/assets/neko/java.png";
 
-	// --- Sprite sheet geometry (8x4 grid of 32px cells with 1px gutters) ---
 	const SHEET_COLS = 8;
 	const CELL_SIZE = 32;
-	const CELL_STRIDE = 33; // cell + gutter
+	const CELL_STRIDE = 33; // 32px cell and 1px gutter
 	const SHEET_W = 263;
 	const SHEET_H = 131;
 	const DISPLAY_SIZE = 48;
 	const SCALE = DISPLAY_SIZE / CELL_SIZE;
 
-	// --- Configuration ---
-	const SPEED_MIN = 8; // minimum speed (close to cursor)
-	const SPEED_MAX = 24; // maximum speed (far from cursor)
-	const SPEED_RAMP_DIST = 200; // distance at which max speed is reached
+	const SPEED_MIN = 8;
+	const SPEED_MAX = 24;
+	const SPEED_RAMP_DIST = 200;
 	const IDLE_SPACE = 10;
-	const LOGIC_INTERVAL = 125; // ms between logic ticks (~8 fps)
+	const LOGIC_INTERVAL = 125;
 	const HOME_X = 20;
 	const HOME_Y = 20;
 	const STORAGE_KEY = "neko-chasing";
 
-	// --- Proximity / fidget config ---
-	const PROXIMITY_DIST = 80; // px - cursor distance to trigger startle
-	const PROXIMITY_AWAKE_TICKS = 8; // how long to stay awake when startled
-	const FIDGET_CHANCE = 0.001; // chance per tick to fidget during sleep (~once per 2 min)
-	const FIDGET_DURATION = 6; // ticks for a fidget animation
+	const PROXIMITY_DIST = 80;
+	const PROXIMITY_AWAKE_TICKS = 8;
+	const FIDGET_CHANCE = 0.001; // About once every two minutes.
+	const FIDGET_DURATION = 6;
 
-	// --- Pounce config ---
-	const POUNCE_DIST = 120; // freeze and wind up inside this distance
-	const POUNCE_MIN_DIST = 60; // no windup at point-blank range, just walk
-	const POUNCE_ESCAPE = 240; // prey escaped: abort the windup/leap, re-arm beyond this
+	const POUNCE_DIST = 120;
+	const POUNCE_MIN_DIST = 60;
+	const POUNCE_ESCAPE = 240;
 	const POUNCE_SPEED = 44;
-	const WINDUP_MIN_TICKS = 12; // freeze duration before the leap (1.5s - 2.5s)
+	const WINDUP_MIN_TICKS = 12;
 	const WINDUP_MAX_TICKS = 20;
-	const SIT_OFFSET = 40; // walking arrivals settle beside the cursor, not on it
-	const CATCH_RADIUS = 12; // resting with the cursor this close to her front paws traps it
-	const EDGE_PUSH = 80; // how far past the viewport edge an escaped cursor is projected
+	const SIT_OFFSET = 40;
+	const CATCH_RADIUS = 12;
+	const EDGE_PUSH = 80;
 
-	// --- State enum (matching original Neko98) ---
+	// Sprite states follow the original Neko98 order.
 	const State = {
 		STOP: 0,
 		WASH: 1,
@@ -65,7 +61,6 @@
 
 	type ChasePhase = "run" | "windup" | "pounce" | "settle";
 
-	// --- Timing constants (in logic ticks) ---
 	const STOP_TIME = 4;
 	const WASH_TIME = 10;
 	const SCRATCH_TIME = 4;
@@ -73,11 +68,10 @@
 	const AWAKE_TIME = 3;
 	const CLAW_TIME = 10;
 
-	// --- Trig constants for direction calculation ---
 	const SIN_PI_PER_8 = 0.3826834323651;
 	const SIN_PI_PER_8_TIMES_3 = 0.9238795325113;
 
-	// --- Animation table: [state] = [cell0, cell1] (sheet cell indices, row-major) ---
+	// Sprite cells for each state, in row-major order.
 	const ANIMATION: [number, number][] = [];
 	ANIMATION[State.STOP] = [0, 0];
 	ANIMATION[State.WASH] = [2, 3];
@@ -98,13 +92,11 @@
 	ANIMATION[State.L_CLAW] = [30, 31];
 	ANIMATION[State.R_CLAW] = [26, 27];
 
-	// --- Reactive state (Svelte 5 runes) ---
 	let renderX = $state(HOME_X);
 	let renderY = $state(HOME_Y);
 	let currentFrame = $state(0);
 	let chasing = $state(true);
 
-	// --- Internal logic state ---
 	let logicX = HOME_X;
 	let logicY = HOME_Y;
 	let prevLogicX = HOME_X;
@@ -123,20 +115,17 @@
 	let lastLogicTime = 0;
 	let returningHome = false;
 
-	// --- Idle behavior state ---
 	let fidgeting = false;
 	let fidgetTicks = 0;
 	let proximityAwake = false;
 	let proximityTicks = 0;
 
-	// --- Hunt behavior state ---
-	let chasePhase: ChasePhase = $state("run"); // reactive: drives the windup shake class
+	let chasePhase: ChasePhase = $state("run");
 	let windupCount = 0;
-	let windupDuration = 0; // always set on windup entry
+	let windupDuration = 0;
 	let sitOffsetX = SIT_OFFSET;
 	let sitOffsetY = 6;
 
-	// --- Caught cursor state ---
 	let caught = $state(false);
 	let catchX = 0;
 	let catchY = 0;
@@ -150,11 +139,9 @@
 		}
 	});
 
-	// --- Derived sheet position for the current frame ---
 	let bgX = $derived(-(currentFrame % SHEET_COLS) * CELL_STRIDE * SCALE);
 	let bgY = $derived(-Math.floor(currentFrame / SHEET_COLS) * CELL_STRIDE * SCALE);
 
-	// --- Helper functions ---
 	function moveStart(): boolean {
 		return !(
 			oldToX >= toX - IDLE_SPACE &&
@@ -178,7 +165,6 @@
 		stateCount = 0;
 		currentState = state;
 		if (state === State.AWAKE) {
-			// New chase segment: pick a fresh spot beside the cursor
 			newSitSpot();
 		}
 	}
@@ -187,7 +173,7 @@
 		const anim = ANIMATION[currentState];
 		if (!anim) return 0;
 		if (currentState === State.SLEEP) return anim[(tickCount >> 2) & 1];
-		if (isMoveState(currentState) && chasePhase === "windup") return anim[0]; // hold the crouch
+		if (isMoveState(currentState) && chasePhase === "windup") return anim[0];
 		return anim[tickCount & 1];
 	}
 
@@ -199,7 +185,7 @@
 		} else {
 			const largeX = dx;
 			const largeY = -dy;
-			const length = Math.sqrt(largeX * largeX + largeY * largeY);
+			const length = Math.hypot(largeX, largeY);
 			const sinTheta = largeY / length;
 
 			if (dx > 0) {
@@ -220,8 +206,7 @@
 		if (currentState !== newState) setNekoState(newState);
 	}
 
-	// Her "front paws" anchor: the bottom-center of the sprite, the point she
-	// plants on targets. All cursor distances and thresholds measure from here.
+	// Use the sprite's bottom center as the paw position for targeting.
 	function pawX(): number {
 		return logicX + DISPLAY_SIZE / 2;
 	}
@@ -235,14 +220,11 @@
 	}
 
 	function getSpeed(): number {
-		// Variable speed: accelerate when further from cursor
 		const t = Math.min(distToCursor() / SPEED_RAMP_DIST, 1);
 		return SPEED_MIN + (SPEED_MAX - SPEED_MIN) * t;
 	}
 
-	// The point she is currently heading for: home anchor, the cursor itself while
-	// hunting (windup through post-leap settle) or holding a caught cursor, or a
-	// spot beside the cursor.
+	// Return home, track the cursor during a pounce or catch, or settle beside it.
 	function computeTarget(): [number, number] {
 		if (returningHome) return [HOME_X + DISPLAY_SIZE / 2, HOME_Y + DISPLAY_SIZE];
 		if (caught || chasePhase !== "run") return [mouseX, mouseY];
@@ -252,11 +234,9 @@
 	function logicTick() {
 		const atHome = !chasing && !returningHome;
 
-		// --- Idle at home: proximity reaction + fidgets ---
 		if (atHome) {
 			tickCount = (tickCount + 1) % 9999;
 
-			// Proximity startle: cursor near resting cat
 			if (!proximityAwake && !fidgeting && currentState === State.SLEEP) {
 				if (distToCursor() < PROXIMITY_DIST) {
 					proximityAwake = true;
@@ -271,11 +251,9 @@
 				if (proximityTicks >= PROXIMITY_AWAKE_TICKS) {
 					proximityAwake = false;
 					proximityTicks = 0;
-					// Go back to sleep if cursor moved away, otherwise stay alert
 					if (distToCursor() >= PROXIMITY_DIST) {
 						setNekoState(State.SLEEP);
 					} else {
-						// Stay awake while cursor is near
 						proximityAwake = true;
 						proximityTicks = 0;
 					}
@@ -284,12 +262,10 @@
 				return;
 			}
 
-			// Random fidget during sleep
 			if (!fidgeting && currentState === State.SLEEP) {
 				if (Math.random() < FIDGET_CHANCE) {
 					fidgeting = true;
 					fidgetTicks = 0;
-					// Randomly pick scratch or yawn
 					setNekoState(Math.random() < 0.5 ? State.SCRATCH : State.YAWN);
 				}
 			}
@@ -307,13 +283,12 @@
 				return;
 			}
 
-			// Normal idle progression at home
 			if (currentState === State.SLEEP) {
 				currentFrame = getFrameIndex();
 				return;
 			}
 
-			// Run the idle chain: STOP -> WASH -> SCRATCH -> YAWN -> SLEEP
+			// Idle cycle: stop, wash, scratch, yawn, sleep.
 			if (tickCount % 2 === 0 && stateCount < 9999) stateCount++;
 
 			switch (currentState) {
@@ -338,7 +313,6 @@
 			return;
 		}
 
-		// --- Active chasing / returning home ---
 		const [targetX, targetY] = computeTarget();
 
 		oldToX = toX;
@@ -346,15 +320,14 @@
 		toX = targetX;
 		toY = targetY;
 
-		// Distance from her front paws to the target
 		const largeX = toX - pawX();
 		const largeY = toY - pawY();
-		const length = Math.sqrt(largeX * largeX + largeY * largeY);
+		const length = Math.hypot(largeX, largeY);
 
-		// Hunt phases: run -> windup (freeze + wiggle) -> pounce -> settle, only while chasing
+		// Pounces progress through run, windup, leap, and settle.
 		if (!returningHome && isMoveState(currentState)) {
 			if (chasePhase !== "run" && length > POUNCE_ESCAPE) {
-				chasePhase = "run"; // prey got away: back to a normal chase, ready to hunt again
+				chasePhase = "run";
 			}
 			if (chasePhase === "run" && length < POUNCE_DIST && length > POUNCE_MIN_DIST) {
 				chasePhase = "windup";
@@ -366,7 +339,7 @@
 				if (windupCount >= windupDuration) {
 					chasePhase = "pounce";
 				} else {
-					// Freeze in place before the leap; the shake comes from CSS
+					// CSS supplies the windup shake while movement pauses.
 					windupCount++;
 					dx = 0;
 					dy = 0;
@@ -386,7 +359,7 @@
 			if (length <= speed) {
 				dx = Math.round(largeX);
 				dy = Math.round(largeY);
-				// Landed on the prey: stay locked onto the cursor until she comes to rest
+				// Track the cursor until the landing settles.
 				if (chasePhase === "pounce") chasePhase = "settle";
 			} else {
 				dx = Math.round((speed * largeX) / length);
@@ -398,7 +371,6 @@
 			chasePhase = "run";
 		}
 
-		// Increment tick counter
 		tickCount = (tickCount + 1) % 9999;
 		if (tickCount % 2 === 0 && stateCount < 9999) {
 			stateCount++;
@@ -407,7 +379,6 @@
 		const maxX = window.innerWidth - DISPLAY_SIZE;
 		const maxY = window.innerHeight - DISPLAY_SIZE;
 
-		// State machine
 		switch (currentState) {
 			case State.STOP:
 				if (returningHome) {
@@ -468,7 +439,6 @@
 
 				calcDirection();
 
-				// Clamp position
 				if (newX < 0) newX = 0;
 				else if (newX > maxX) newX = maxX;
 				if (newY < 0) newY = 0;
@@ -489,7 +459,6 @@
 					logicX = newX;
 					logicY = newY;
 
-					// Check if arrived home
 					if (returningHome) {
 						const distToHome = Math.abs(logicX - HOME_X) + Math.abs(logicY - HOME_Y);
 						if (distToHome < SPEED_MAX) {
@@ -510,12 +479,12 @@
 			case State.L_CLAW:
 			case State.R_CLAW:
 				if (moveStart()) setNekoState(State.AWAKE);
-				// Frustrated meow (the yawn frame) before giving up and dozing off
+				// Reuse the yawn frame for a frustrated meow.
 				else if (stateCount >= CLAW_TIME) setNekoState(State.YAWN);
 				break;
 		}
 
-		// Catch: coming to rest on top of the cursor traps it under her paws
+		// Trap the cursor when the cat comes to rest over it.
 		if (
 			!caught &&
 			!returningHome &&
@@ -528,12 +497,10 @@
 			catchY = mouseY;
 		}
 
-		// Update the displayed frame
 		currentFrame = getFrameIndex();
 	}
 
 	function startMovingTowards() {
-		// Immediately compute direction and enter a movement state (skip AWAKE delay)
 		const [targetX, targetY] = computeTarget();
 		toX = targetX;
 		toY = targetY;
@@ -543,7 +510,7 @@
 		const speed = returningHome ? SPEED_MAX : getSpeed();
 		const largeX = toX - pawX();
 		const largeY = toY - pawY();
-		const length = Math.sqrt(largeX * largeX + largeY * largeY);
+		const length = Math.hypot(largeX, largeY);
 
 		if (length > 0) {
 			dx = Math.round((speed * largeX) / length);
@@ -555,20 +522,17 @@
 	}
 
 	function handleClick() {
-		// Cancel any idle animations, release the cursor if she has it
 		fidgeting = false;
 		proximityAwake = false;
 		caught = false;
 		chasePhase = "run";
 
 		if (chasing) {
-			// Stop chasing, run back home immediately
 			chasing = false;
 			returningHome = true;
 			startMovingTowards();
 			localStorage.setItem(STORAGE_KEY, "false");
 		} else if (!returningHome) {
-			// Resume chasing - start moving toward cursor immediately
 			chasing = true;
 			newSitSpot();
 			startMovingTowards();
@@ -580,8 +544,7 @@
 		mouseX = e.clientX;
 		mouseY = e.clientY;
 
-		// The prey wriggles free once it moves clearly away from the catch spot;
-		// smaller twitches stay pinned under her paws.
+		// Small movements stay pinned; a clear move frees the cursor.
 		if (caught) {
 			const escaped = Math.hypot(mouseX - catchX, mouseY - catchY) > IDLE_SPACE;
 			if (escaped) caught = false;
@@ -589,10 +552,9 @@
 	}
 
 	function handleMouseOut(e: MouseEvent) {
-		if (e.relatedTarget) return; // moved between elements, still inside the window
+		if (e.relatedTarget) return; // Still inside the page.
 
-		// The cursor escaped the viewport: project the target past the nearest edge
-		// so she runs there, claws the wall, meows, and gives up.
+		// Project the target past the nearest edge so the cat follows it out.
 		mouseX = e.clientX;
 		mouseY = e.clientY;
 		const distLeft = e.clientX;
@@ -605,39 +567,15 @@
 		else if (nearest === distTop) mouseY = -EDGE_PUSH;
 		else mouseY = window.innerHeight + EDGE_PUSH;
 
-		caught = false; // it slipped out from under her paws
+		caught = false;
 	}
 
 	onMount(() => {
-		// Load persisted chase state
-		const stored = localStorage.getItem(STORAGE_KEY);
-		if (stored === "false") {
-			chasing = false;
-			logicX = HOME_X;
-			logicY = HOME_Y;
-			prevLogicX = HOME_X;
-			prevLogicY = HOME_Y;
-			renderX = HOME_X;
-			renderY = HOME_Y;
-			setNekoState(State.STOP);
-			currentFrame = getFrameIndex();
-		} else {
-			chasing = true;
-			logicX = HOME_X;
-			logicY = HOME_Y;
-			prevLogicX = HOME_X;
-			prevLogicY = HOME_Y;
-			renderX = HOME_X;
-			renderY = HOME_Y;
-		}
-
-		mouseX = HOME_X;
-		mouseY = HOME_Y;
+		chasing = localStorage.getItem(STORAGE_KEY) !== "false";
 
 		window.addEventListener("mousemove", handleMouseMove);
 		window.addEventListener("mouseout", handleMouseOut);
 
-		// Logic tick at fixed interval
 		lastLogicTime = performance.now();
 		const logicInterval = setInterval(() => {
 			prevLogicX = logicX;
@@ -646,14 +584,13 @@
 			lastLogicTime = performance.now();
 		}, LOGIC_INTERVAL);
 
-		// Render loop: interpolate position smoothly between logic ticks
+		// Interpolate between logic ticks for smooth movement.
 		let rafId: number;
 		function render() {
 			const now = performance.now();
 			const elapsed = now - lastLogicTime;
 			const t = Math.min(elapsed / LOGIC_INTERVAL, 1);
 
-			// Lerp between previous and current logic position
 			renderX = prevLogicX + (logicX - prevLogicX) * t;
 			renderY = prevLogicY + (logicY - prevLogicY) * t;
 
@@ -686,7 +623,7 @@
 </button>
 
 <style>
-	/* Pre-pounce butt wiggle: whole-pixel jumps via steps() keep the sprite crisp */
+	/* Whole-pixel steps keep the windup shake sharp. */
 	@keyframes windup-shake {
 		0%,
 		100% {

@@ -1,13 +1,7 @@
-/**
- * A comically over-the-top chain reaction rendered on a throwaway full-screen
- * canvas: three escalating blasts hopscotching across the screen, an orbital
- * annihilation beam finale and a shower of glowing embers. No assets, no
- * workers (CSP-safe), removes itself when the smoke clears.
- */
+/** Draws the click explosion on a temporary full-screen canvas. */
 
 type Rgb = [number, number, number];
 
-// White-hot core cooling through yellow/orange/red into smoke.
 const FIRE_RAMP: Rgb[] = [
 	[255, 255, 255],
 	[255, 224, 110],
@@ -16,7 +10,7 @@ const FIRE_RAMP: Rgb[] = [
 	[92, 82, 76]
 ];
 
-// The chain reaction: [seconds after click, blast scale].
+// [delay in seconds, scale]
 const BLASTS: Array<[number, number]> = [
 	[0, 0.9],
 	[0.32, 1.3],
@@ -26,7 +20,6 @@ const FINALE_AT = 1.15;
 const FINALE_SCALE = 2.4;
 const TOTAL_MS = 5500;
 
-// The beam races down from orbit, bores into the target, then dissipates.
 const BEAM_DESCENT = 0.12;
 const BEAM_SUSTAIN = 0.55;
 const BEAM_FADE = 0.35;
@@ -114,7 +107,7 @@ function scatter(x: number, y: number, speedMin: number, speedMax: number) {
 }
 
 export type ExplodeOptions = {
-	/** Called the moment the finale blast goes off — the cue to remove the target. */
+	/** Runs when the final blast lands. */
 	onFinale?: () => void;
 };
 
@@ -149,8 +142,6 @@ export function explode(x: number, y: number, options: ExplodeOptions = {}) {
 		beams: []
 	};
 
-	// The chain reaction: near misses bracketing the target, which survives
-	// each one unimpressed.
 	const edge = 40;
 	const [firstDelay, firstScale] = BLASTS[0];
 	spawnBurst(stage, x, y, firstScale, firstDelay, reduceMotion);
@@ -160,9 +151,6 @@ export function explode(x: number, y: number, options: ExplodeOptions = {}) {
 		spawnBurst(stage, bx, by, scale, delay, reduceMotion);
 	}
 
-	// Grand finale: judgment from orbit. The beam slams down onto the target
-	// the instant the mega blast goes off, bores in for a beat, then the
-	// ember rain falls out of whatever is left.
 	stage.beams.push({ x, y, birth: FINALE_AT - BEAM_DESCENT });
 	spawnBeamSparks(stage, x, y, FINALE_AT);
 	spawnBurst(stage, x, y, FINALE_SCALE, FINALE_AT, reduceMotion);
@@ -274,7 +262,6 @@ function spawnBurst(
 	}
 }
 
-/** Molten spray spitting sideways off the column while the beam bores in. */
 function spawnBeamSparks(stage: Stage, x: number, y: number, birth: number) {
 	for (let i = 0; i < 36; i++) {
 		const side = Math.random() < 0.5 ? -1 : 1;
@@ -288,7 +275,6 @@ function spawnBeamSparks(stage: Stage, x: number, y: number, birth: number) {
 		});
 	}
 
-	// Smoke boiling off the impact point, so something lingers after the fade.
 	for (let i = 0; i < 12; i++) {
 		stage.smoke.push({
 			x: x + rand(-24, 24),
@@ -319,13 +305,12 @@ function spawnEmbers(stage: Stage, x: number, y: number, birth: number) {
 	}
 }
 
-/** A white-hot column from the top of the screen down to the impact point. */
 function drawBeams(ctx: CanvasRenderingContext2D, beams: Beam[], t: number) {
 	for (const b of beams) {
 		const age = t - b.birth;
 		if (age < 0 || age >= BEAM_DESCENT + BEAM_SUSTAIN + BEAM_FADE) continue;
 
-		// The tip accelerates down from the sky, then the column stays planted.
+		// Quadratic descent accelerates the beam tip.
 		const descent = Math.min(1, age / BEAM_DESCENT);
 		const tipY = b.y * descent * descent;
 
@@ -334,7 +319,7 @@ function drawBeams(ctx: CanvasRenderingContext2D, beams: Beam[], t: number) {
 		const flicker = 0.82 + 0.18 * Math.sin(age * 47) * Math.sin(age * 31 + 1.7);
 		const coreW = 3 + 11 * intensity * flicker;
 
-		// Outer glow, sheath, core: widening strips with soft horizontal edges.
+		// Draw the outer glow, sheath, and core from widest to narrowest.
 		const layers: Array<[number, string]> = [
 			[coreW * 5, `rgba(255,150,40,${0.16 * intensity})`],
 			[coreW * 2.4, `rgba(255,205,110,${0.35 * intensity})`],
@@ -349,7 +334,6 @@ function drawBeams(ctx: CanvasRenderingContext2D, beams: Beam[], t: number) {
 			ctx.fillRect(b.x - w, 0, w * 2, tipY);
 		}
 
-		// Molten blob where the beam bores into the ground.
 		if (descent >= 1) {
 			const r = 46 * intensity * (0.9 + 0.1 * Math.sin(age * 40));
 			const gradient = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, r);

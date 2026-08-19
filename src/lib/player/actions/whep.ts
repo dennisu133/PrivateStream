@@ -9,10 +9,9 @@ const ENDPOINT = "/api/whep";
 const RECONNECT_DELAY_MS = 1500;
 const MAX_RECONNECT_DELAY_MS = 30_000;
 const WATCHDOG_INTERVAL_MS = 2000;
-// Renegotiate when a "connected" session has delivered no media for this long.
+// Reconnect if a connected peer stops receiving media for this long.
 const STALL_RECONNECT_MS = 10_000;
-// "disconnected" is often a transient ICE hiccup that recovers on its own;
-// wait at least this long before tearing the connection down.
+// Give transient disconnected states time to recover before reconnecting.
 const DISCONNECTED_GRACE_MS = 5000;
 
 export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}) {
@@ -33,19 +32,17 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}) {
 		opts.onReceivingChange?.(receiving);
 	};
 
-	// Tear down the current session on SRS (fire-and-forget). Without this,
-	// every reconnect leaves a zombie session behind until SRS times it out.
+	// Delete the SRS session before reconnecting so it does not linger until timeout.
 	const deleteSession = () => {
 		const url = sessionUrl;
 		sessionUrl = null;
-		// Only same-origin proxy paths issued by our own backend are used.
+		// Accept only proxy paths returned by this app.
 		if (!url || !url.startsWith("/")) return;
 		console.log("[WHEP] Deleting session", url);
 		fetch(url, { method: "DELETE", keepalive: true }).catch(() => {});
 	};
 
-	// Close the peer connection and stop all tracks without marking the
-	// controller stopped, so a later connect() can bring the session back.
+	// Release peer resources without preventing a later reconnect.
 	const closeConnection = () => {
 		clearReconnect();
 		try {
@@ -60,10 +57,7 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}) {
 		setReceiving("idle");
 	};
 
-	// `keepalive` lets the DELETE survive the page being closed. The connection
-	// must be fully torn down even for bfcache suspensions: an open
-	// RTCPeerConnection or live MediaStreamTrack makes the page ineligible for
-	// the back/forward cache, so we close everything and rebuild on pageshow.
+	// Close peer resources for bfcache; keepalive lets session deletion finish.
 	const onPageHide = () => {
 		deleteSession();
 		closeConnection();
@@ -173,8 +167,7 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}) {
 			if (last.updatedAt === 0 || dataReceived) {
 				last = { bytes, updatedAt: now };
 				if (dataReceived) {
-					// Media is flowing again; cancel any pending stall reconnect
-					// and reset the backoff only on proof of a healthy stream.
+					// Reset backoff only after media starts flowing again.
 					clearReconnect();
 					currentReconnectDelayMs = RECONNECT_DELAY_MS;
 				}
@@ -188,9 +181,7 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}) {
 				}
 				setReceiving("idle");
 
-				// A session that stays "connected" without media (e.g. SRS kept
-				// it alive across a publisher restart) never fires a state
-				// change, so renegotiate ourselves once the stall persists.
+				// A connected peer can stall without firing a state change.
 				if (now - last.updatedAt >= STALL_RECONNECT_MS && reconnectTimer === null) {
 					console.warn(`[WHEP] No data for ${STALL_RECONNECT_MS}ms while connected; renegotiating`);
 					currentReconnectDelayMs = Math.min(MAX_RECONNECT_DELAY_MS, currentReconnectDelayMs * 2);

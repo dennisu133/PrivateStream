@@ -101,7 +101,6 @@
 
 	const handleWheel = (event: WheelEvent) => {
 		if (disableGlobalInput) return;
-		// Scroll up = increase volume, scroll down = decrease
 		const delta = event.deltaY < 0 ? SCROLL_STEP : -SCROLL_STEP;
 		adjustVolume(delta);
 	};
@@ -151,7 +150,7 @@
 			} else {
 				lastNonZeroVolume = DEFAULT_VOLUME;
 			}
-			// Always start muted to satisfy autoplay policies
+			// Start muted so autoplay is allowed.
 			isMuted = true;
 		} catch (error) {
 			console.warn("Failed to restore player volume", error);

@@ -3,9 +3,7 @@ import { isIP } from "node:net";
 type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
 
 export type PublicIpResolverOptions = {
-	/** Static IP that skips all external lookups when set (tier 1). */
 	staticIp?: string;
-	/** Plain-text IP echo services, tried in order (tier 2). */
 	lookupUrls: string[];
 	cacheMs?: number;
 	lookupTimeoutMs?: number;
@@ -14,14 +12,10 @@ export type PublicIpResolverOptions = {
 };
 
 /**
- * Resolves the server's public IP for the SRS `eip` candidate.
- *
- * Resolution order:
- * 1. `staticIp`, if configured and valid — no external requests are made.
- * 2. The first `lookupUrls` service that returns a valid IP, cached for `cacheMs`.
- * 3. The last known IP when every lookup fails (stale-on-error).
- *
- * Concurrent callers share a single in-flight lookup.
+ * Resolves the public IP used for SRS `eip`.
+ * A valid static IP skips external lookups. Otherwise, services are tried in
+ * order and cached. Failed refreshes reuse the last result, and concurrent
+ * callers share one lookup.
  */
 export function createPublicIpResolver({
 	staticIp,
@@ -42,17 +36,11 @@ export function createPublicIpResolver({
 	let inFlight: Promise<string> | null = null;
 
 	async function lookupOnce(url: string): Promise<string> {
-		const controller = new AbortController();
-		const timer = setTimeout(() => controller.abort(), lookupTimeoutMs);
-		try {
-			const res = await fetchFn(url, { signal: controller.signal });
-			if (!res.ok) throw new Error(`HTTP ${res.status}`);
-			const ip = (await res.text()).trim();
-			if (!isIP(ip)) throw new Error("response is not an IP address");
-			return ip;
-		} finally {
-			clearTimeout(timer);
-		}
+		const res = await fetchFn(url, { signal: AbortSignal.timeout(lookupTimeoutMs) });
+		if (!res.ok) throw new Error(`HTTP ${res.status}`);
+		const ip = (await res.text()).trim();
+		if (!isIP(ip)) throw new Error("response is not an IP address");
+		return ip;
 	}
 
 	async function lookup(): Promise<string> {
@@ -79,12 +67,12 @@ export function createPublicIpResolver({
 				const ip = await inFlight;
 				cached = { value: ip, expiresAt: now + cacheMs };
 				return ip;
-			} catch (e) {
+			} catch (error) {
 				if (cached) {
 					log(`IP lookup failed; reusing last known IP ${cached.value}`);
 					return cached.value;
 				}
-				throw e;
+				throw error;
 			}
 		}
 	};

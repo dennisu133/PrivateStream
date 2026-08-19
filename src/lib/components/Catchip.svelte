@@ -1,6 +1,3 @@
-<!-- A cat-eating-chips gif in the bottom right corner of the page -->
-<!-- that goes out with a bang on click -->
-
 <script lang="ts">
 	import catchipGif from "$lib/assets/catchip.webp";
 	import { explode } from "$lib/effects/explosion";
@@ -12,7 +9,7 @@
 		if (detonating) return;
 		detonating = true;
 
-		// The gif shrugs off the near misses; only the direct hit removes it.
+		// Hide the cat only when the final blast lands.
 		explode(event.clientX, event.clientY, {
 			onFinale: () => (isGifVisible = false)
 		});

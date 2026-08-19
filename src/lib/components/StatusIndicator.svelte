@@ -13,16 +13,8 @@
 <span
 	class="inline-flex items-start gap-2.5 font-mono text-xs leading-none font-light tracking-widest uppercase"
 >
-	<!-- The LED is sized and placed against the label's CAP BAND, not its line
-	     box, so it spans exactly cap-top to baseline.
-
-	     It aligns to the FIRST line rather than centring, so a label that wraps
-	     keeps the dot on line one instead of floating it between the lines.
-	     Offset from the line-box top to cap-top:
-	         (lineHeight - ascent - descent) / 2 + ascent - cap
-	     For JetBrains Mono ascent/descent/cap are 1 / 0.333 / 0.75em, and the
-	     line height is read with `1lh` so this stays correct whatever leading the
-	     label is given. Single-line output is identical to centring. -->
+	<!-- Align the LED with the first line's cap height. The constants come from
+	     JetBrains Mono's ascent, descent, and cap metrics. -->
 	<span
 		class="relative mt-[calc((1lh-1.333em)/2+0.25em)] inline-flex size-[0.75em] shrink-0 items-center justify-center rounded-full
 			{state === 'ok'

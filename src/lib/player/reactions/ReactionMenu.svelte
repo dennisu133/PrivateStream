@@ -17,14 +17,12 @@
 	let containerEl = $state<HTMLDivElement | null>(null);
 	let menuEl = $state<HTMLDivElement | null>(null);
 
-	// Focus menu when it becomes available
 	$effect(() => {
 		if (menuEl) {
 			menuEl.focus();
 		}
 	});
 
-	// Keep selection in bounds and scroll into view
 	$effect(() => {
 		if (selectedIndex >= reactions.length) selectedIndex = 0;
 		const target = menuEl?.children[selectedIndex] as HTMLElement;
@@ -82,8 +80,7 @@
 			return;
 		}
 
-		// Handle arrow keys globally (steal from VolumeControls)
-		// Only process if menu element doesn't have focus (to avoid double-handling)
+		// The focused menu handles its own keys; otherwise intercept arrows before VolumeControls.
 		if (menuEl && document.activeElement === menuEl) return;
 		if (handleArrowKey(e.key)) {
 			e.preventDefault();
@@ -92,17 +89,15 @@
 
 	function handleClickOutside(e: MouseEvent) {
 		const target = e.target as HTMLElement;
-		// Ignore clicks on the toggle button (let it handle its own toggle)
 		if (toggleButtonEl?.contains(target)) {
 			return;
 		}
-		// Check if click is outside the container (includes the whole menu panel)
 		if (containerEl && !containerEl.contains(target)) {
 			onClose();
 		}
 	}
 
-	// Register click outside handler (capture phase to catch clicks before they bubble)
+	// Capture clicks before the toggle button handles them.
 	$effect(() => {
 		document.addEventListener("click", handleClickOutside, true);
 		return () => {

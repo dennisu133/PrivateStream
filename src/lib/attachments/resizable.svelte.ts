@@ -1,12 +1,7 @@
 import type { Attachment } from "svelte/attachments";
 
 export type ResizableOptions = {
-	/**
-	 * Selector for the child that defines the resizable content, when the element
-	 * also holds things that aren't part of it - a caption or status line under a
-	 * frame, say. Handles then sit in the padding ring just outside that child on
-	 * all four sides, rather than being pushed below the trailing content.
-	 */
+	/** Child that defines the resize surface when the element has trailing content. */
 	surfaceSelector?: string;
 };
 
@@ -35,21 +30,7 @@ const CURSOR_MAP: Record<NonNullable<Edge>, string> = {
 	"bottom-left": "nesw-resize"
 };
 
-/**
- * Creates a resizable attachment that reads size constraints from CSS.
- * Set min-width and max-width on the element to control bounds.
- * Aspect ratio is calculated dynamically from the element's dimensions.
- *
- * @example
- * ```svelte
- * <div
- *   class="min-w-80 max-w-[90vw] w-[70vw]"
- *   {@attach resizable()}
- * >
- *   Content
- * </div>
- * ```
- */
+/** Adds aspect-ratio-preserving edge handles using the element's CSS width constraints. */
 export function resizable(options: ResizableOptions = {}): Attachment<HTMLElement> {
 	const { surfaceSelector } = options;
 
@@ -63,34 +44,26 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 
 		const isFullscreen = () => document.fullscreenElement !== null;
 
-		/**
-		 * Height of the resizable surface. Without a surface child this is just
-		 * the element. With one, it is that child plus the padding ring the
-		 * handles live in - which is exactly how the left, right and top edges
-		 * already behave, so the bottom band ends up symmetric with them.
-		 */
+		// Include the padding ring but exclude trailing content such as the status bar.
 		const getSurfaceHeight = (rect: DOMRect) => {
 			const surface = surfaceSelector ? element.querySelector(surfaceSelector) : null;
 			if (!surface) return rect.height;
 			return surface.getBoundingClientRect().bottom - rect.top + EDGE_THRESHOLD;
 		};
 
-		/** Get current aspect ratio from the resizable surface */
 		const getAspectRatio = () => {
 			const rect = element.getBoundingClientRect();
 			const height = getSurfaceHeight(rect);
 			return height > 0 ? rect.width / height : 1;
 		};
 
-		/** Get min/max constraints from CSS computed styles */
 		const getConstraints = () => {
 			const style = getComputedStyle(element);
 			const minWidth = parseFloat(style.minWidth) || 0;
-			// maxWidth can be "none" which parses to NaN
 			let maxWidth = parseFloat(style.maxWidth);
 			if (!Number.isFinite(maxWidth)) maxWidth = Infinity;
 
-			// Also constrain by viewport height (prevent overflow)
+			// Keep the surface within 90% of the viewport height.
 			const availableHeight = window.innerHeight * 0.9;
 			const aspectRatio = getAspectRatio();
 			const maxFromHeight = availableHeight * aspectRatio;
@@ -138,8 +111,7 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 			const x = clientX - rect.left;
 			const y = clientY - rect.top;
 
-			// Below the surface there is no handle - otherwise the left/right bands
-			// would keep reaching down beside the trailing content.
+			// Do not extend side handles beside trailing content.
 			const surfaceHeight = getSurfaceHeight(rect);
 			if (y > surfaceHeight) return null;
 
@@ -223,7 +195,6 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 			setDataAttr("resizing", null);
 			element.style.touchAction = "";
 
-			// Update cursor based on current pointer position
 			updateCursor(getEdgeFromPosition(e.clientX, e.clientY));
 		};
 
@@ -233,7 +204,6 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 			}
 		};
 
-		// Media query handling
 		const mediaQuery = window.matchMedia(DESKTOP_QUERY);
 
 		const enableResize = () => {
@@ -263,7 +233,6 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 			}
 		};
 
-		// Setup
 		element.addEventListener("pointerdown", handlePointerDown);
 		element.addEventListener("pointermove", handlePointerMove);
 		element.addEventListener("pointerup", handlePointerUp);
@@ -272,7 +241,6 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 		mediaQuery.addEventListener("change", handleMediaChange);
 		handleMediaChange(mediaQuery);
 
-		// Cleanup
 		return () => {
 			element.removeEventListener("pointerdown", handlePointerDown);
 			element.removeEventListener("pointermove", handlePointerMove);

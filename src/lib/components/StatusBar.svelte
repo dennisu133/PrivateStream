@@ -31,7 +31,7 @@
 >
 	<StatusIndicator state={connectionIndicator.state} label={connectionIndicator.label} />
 	{#if connectionIndicator.state === "ok"}
-		<!-- Cap-height too, so the divider matches the LEDs and the type -->
+		<!-- Match the divider to the text cap height. -->
 		<span class="h-[0.75em] w-px translate-y-[-0.042em] bg-theater-border" aria-hidden="true"
 		></span>
 		<StatusIndicator state={streamIndicator.state} label={streamIndicator.label} />

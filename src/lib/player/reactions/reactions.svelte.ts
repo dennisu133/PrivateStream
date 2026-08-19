@@ -8,7 +8,6 @@ export type ReactionEvent = Reaction & {
 	timestamp: number;
 };
 
-// Build the reactions list from assets at build time (client-side, no server round-trip)
 const reactionModules = import.meta.glob<{ default: string }>(
 	"$lib/assets/reactions/*.{png,jpg,jpeg,gif,webp,svg}",
 	{ eager: true }
@@ -19,8 +18,6 @@ export const reactions: Reaction[] = Object.entries(reactionModules).map(([path,
 	const name = filename.replace(/\.[^.]+$/, "");
 	return { id: filename, name, url: module.default };
 });
-
-// --- Trigger a reaction via POST ---
 
 export async function triggerReaction(id: string): Promise<void> {
 	const res = await fetch("/api/reactions", {
@@ -34,11 +31,8 @@ export async function triggerReaction(id: string): Promise<void> {
 	}
 }
 
-// --- SSE subscription for receiving reactions from other viewers ---
-
 type ReactionListener = (event: ReactionEvent) => void;
 
-// Lookup map for enriching SSE events with full reaction data
 const reactionMap = new Map(reactions.map((r) => [r.id, r]));
 
 const listeners = new Set<ReactionListener>();
@@ -68,19 +62,11 @@ function connect() {
 }
 
 function disconnect() {
-	if (eventSource !== null) {
-		eventSource.close();
-		eventSource = null;
-	}
+	eventSource?.close();
+	eventSource = null;
 }
 
-/**
- * Subscribe to reaction events from other viewers via SSE.
- * Manages connection lifecycle automatically:
- * - Connects when the first listener subscribes
- * - Disconnects when the last listener unsubscribes
- * - Lets EventSource reconnect automatically on errors
- */
+/** Shares one EventSource across subscribers and closes it after the last unsubscribe. */
 export function subscribeToReactions(listener: ReactionListener): () => void {
 	listeners.add(listener);
 

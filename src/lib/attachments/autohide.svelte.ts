@@ -1,22 +1,15 @@
 import type { Attachment } from "svelte/attachments";
 
 export type AutohideOptions = {
-	/** Selector for the element to monitor for pointer events (defaults to parent element) */
+	/** Element whose pointer activity keeps controls visible. Defaults to the parent. */
 	monitorSelector?: string;
 };
 
 const HIDE_DELAY_MS = 2200;
 
 /**
- * Creates an autohide attachment that shows/hides an element based on pointer activity.
- *
- * The attachment sets the following data attributes on the element:
- * - `data-visible`: "true" when the element should be visible, "false" when hidden
- *
- * It also provides a way for child elements to hold visibility by dispatching custom events:
- * - `autohide:hold` - prevents hiding until released
- * - `autohide:release` - allows hiding again
- * - `autohide:show` - shows the element temporarily
+ * Toggles `data-visible` after pointer activity. Child controls can dispatch
+ * `autohide:hold`, `autohide:release`, or `autohide:show`.
  */
 export function autohide(options: AutohideOptions = {}): Attachment<HTMLElement> {
 	const { monitorSelector } = options;
@@ -66,11 +59,9 @@ export function autohide(options: AutohideOptions = {}): Attachment<HTMLElement>
 			}
 		};
 
-		// Pointer event handlers for the monitored element
 		const handlePointerActivity = () => show();
 		const handlePointerLeave = () => scheduleHide();
 
-		// Pointer event handlers for the element itself (the controls)
 		const handleControlsEnter = () => {
 			pointerInside = true;
 			setVisible(true);
@@ -82,7 +73,6 @@ export function autohide(options: AutohideOptions = {}): Attachment<HTMLElement>
 			scheduleHide();
 		};
 
-		// Custom event handlers for hold/release/show
 		const handleHold = (e: Event) => {
 			e.stopPropagation();
 			hold();
@@ -98,43 +88,32 @@ export function autohide(options: AutohideOptions = {}): Attachment<HTMLElement>
 			show();
 		};
 
-		// Find the element to monitor for pointer events
-		const getMonitorTarget = (): HTMLElement | null => {
-			if (monitorSelector) {
-				return document.querySelector(monitorSelector);
-			}
-			return element.parentElement;
-		};
-
-		const monitorTarget = getMonitorTarget();
+		const monitorTarget = monitorSelector
+			? document.querySelector<HTMLElement>(monitorSelector)
+			: element.parentElement;
 		const pointerEvents = ["pointermove", "pointerdown", "wheel"] as const;
 
-		// Setup monitor target listeners
 		if (monitorTarget) {
 			pointerEvents.forEach((event) => {
 				monitorTarget.addEventListener(event, handlePointerActivity, { passive: true });
 			});
 			monitorTarget.addEventListener("pointerleave", handlePointerLeave);
-			// Also listen for hold/release/show on monitor target (events dispatched there won't bubble down)
+			// Events sent to the monitor do not bubble down to the controls.
 			monitorTarget.addEventListener("autohide:hold", handleHold);
 			monitorTarget.addEventListener("autohide:release", handleRelease);
 			monitorTarget.addEventListener("autohide:show", handleShow);
 		}
 
-		// Setup element listeners for hover state
 		element.addEventListener("pointerenter", handleControlsEnter);
 		element.addEventListener("pointerleave", handleControlsLeave);
 
-		// Setup custom event listeners for hold/release/show (for events bubbling up from children)
 		element.addEventListener("autohide:hold", handleHold);
 		element.addEventListener("autohide:release", handleRelease);
 		element.addEventListener("autohide:show", handleShow);
 
-		// Initialize visible state
 		setVisible(true);
 		scheduleHide();
 
-		// Cleanup
 		return () => {
 			clearHideTimer();
 
