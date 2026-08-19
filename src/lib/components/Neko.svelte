@@ -247,7 +247,6 @@
 
 			if (proximityAwake) {
 				proximityTicks++;
-				currentFrame = getFrameIndex();
 				if (proximityTicks >= PROXIMITY_AWAKE_TICKS) {
 					proximityAwake = false;
 					proximityTicks = 0;
@@ -273,7 +272,6 @@
 			if (fidgeting) {
 				fidgetTicks++;
 				if (tickCount % 2 === 0 && stateCount < 9999) stateCount++;
-				currentFrame = getFrameIndex();
 				if (fidgetTicks >= FIDGET_DURATION) {
 					fidgeting = false;
 					fidgetTicks = 0;
@@ -521,6 +519,24 @@
 		currentFrame = getFrameIndex();
 	}
 
+	// Storage can be blocked entirely (private browsing, hardened settings); the
+	// preference simply does not survive a reload then.
+	function readStoredChasing(): string | null {
+		try {
+			return localStorage.getItem(STORAGE_KEY);
+		} catch {
+			return null;
+		}
+	}
+
+	function persistChasing(value: boolean) {
+		try {
+			localStorage.setItem(STORAGE_KEY, String(value));
+		} catch {
+			// Ignored on purpose.
+		}
+	}
+
 	function handleClick() {
 		fidgeting = false;
 		proximityAwake = false;
@@ -531,12 +547,14 @@
 			chasing = false;
 			returningHome = true;
 			startMovingTowards();
-			localStorage.setItem(STORAGE_KEY, "false");
-		} else if (!returningHome) {
+			persistChasing(false);
+		} else {
+			// Interrupts the walk home too, so a click always toggles.
 			chasing = true;
+			returningHome = false;
 			newSitSpot();
 			startMovingTowards();
-			localStorage.setItem(STORAGE_KEY, "true");
+			persistChasing(true);
 		}
 	}
 
@@ -571,7 +589,13 @@
 	}
 
 	onMount(() => {
-		chasing = localStorage.getItem(STORAGE_KEY) !== "false";
+		// An explicit past choice wins; otherwise reduced-motion users start with the
+		// cat asleep at home rather than tracking their cursor.
+		const stored = readStoredChasing();
+		chasing =
+			stored === null
+				? !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+				: stored !== "false";
 
 		window.addEventListener("mousemove", handleMouseMove);
 		window.addEventListener("mouseout", handleMouseOut);
@@ -609,10 +633,12 @@
 
 <button
 	type="button"
-	aria-label="Java the cat"
+	aria-label={chasing ? "Send Java the cat home" : "Let Java the cat follow the cursor"}
 	onclick={handleClick}
-	class="fixed z-9999 border-none bg-transparent p-0 {caught ? 'cursor-none' : 'cursor-pointer'}"
-	style="left: {renderX}px; top: {renderY}px;"
+	class="fixed top-0 left-0 z-9999 border-none bg-transparent p-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-theater-gold {caught
+		? 'cursor-none'
+		: 'cursor-pointer'}"
+	style="transform: translate3d({renderX}px, {renderY}px, 0);"
 >
 	<div
 		class="block [image-rendering:pixelated]"
@@ -642,5 +668,11 @@
 
 	.windup-shake {
 		animation: windup-shake 0.4s steps(1, end) infinite;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.windup-shake {
+			animation: none;
+		}
 	}
 </style>
