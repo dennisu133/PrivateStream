@@ -1,7 +1,3 @@
-<!-- Public showcase page: the full theater experience without authentication. -->
-<!-- Plays a looping local clip instead of the live WHEP stream; reactions are -->
-<!-- disabled because their endpoints require a session. -->
-
 <script lang="ts">
 	import Catchip from "virtual:catchip-widget";
 	import Player from "$lib/player/Player.svelte";
@@ -13,6 +9,7 @@
 	<meta name="robots" content="noindex" />
 </svelte:head>
 
+<!-- Reactions require a session and stay disabled on this public page. -->
 <Player demoSrc="/demo.mp4" enableFunFeatures={false} />
 <Catchip />
 <Neko />

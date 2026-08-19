@@ -3,15 +3,12 @@ import { env } from "$env/dynamic/private";
 import { createFixedWindowRateLimiter } from "$lib/server/rate-limit";
 import type { RequestHandler } from "./$types";
 
-// Generous enough for enthusiastic spamming, tight enough that one viewer
-// cannot flood every other client's overlay indefinitely.
+// Allow bursts without letting one viewer dominate the overlay.
 const reactionRateLimiter = createFixedWindowRateLimiter({
 	windowMs: 10_000,
 	perKeyLimit: 30,
 	globalLimit: 120
 });
-
-// --- SSE client management ---
 
 const streams = new Set<ReadableStreamDefaultController>();
 const KEEPALIVE_INTERVAL = 15_000;
@@ -50,8 +47,6 @@ function broadcast(event: string, data: string) {
 	}
 }
 
-// --- Reaction validation (server-side asset list) ---
-
 const reactionModules = import.meta.glob<{ default: string }>(
 	"$lib/assets/reactions/*.{png,jpg,jpeg,gif,webp,svg}",
 	{ eager: true }
@@ -61,12 +56,7 @@ const validReactionIds = new Set(
 	Object.keys(reactionModules).map((path) => path.split("/").pop()!)
 );
 
-// --- Handlers ---
-
-/**
- * SSE endpoint: clients connect here to receive real-time reaction events.
- */
-export const GET: RequestHandler = async ({ locals }) => {
+export const GET: RequestHandler = ({ locals }) => {
 	if (env.REACTIONS === "false") {
 		throw error(404, "Reactions are disabled");
 	}
@@ -100,10 +90,6 @@ export const GET: RequestHandler = async ({ locals }) => {
 	});
 };
 
-/**
- * POST endpoint: trigger a reaction broadcast.
- * Body: { id: string }
- */
 export const POST: RequestHandler = async ({ locals, request, getClientAddress, setHeaders }) => {
 	if (env.REACTIONS === "false") {
 		throw error(404, "Reactions are disabled");
@@ -117,7 +103,7 @@ export const POST: RequestHandler = async ({ locals, request, getClientAddress, 
 	try {
 		clientAddress = getClientAddress();
 	} catch {
-		// The global limit still applies if the adapter cannot resolve an address.
+		// The global limit still applies when no client address is available.
 	}
 
 	const rateLimit = reactionRateLimiter.consume(clientAddress);
@@ -135,12 +121,7 @@ export const POST: RequestHandler = async ({ locals, request, getClientAddress, 
 		throw error(400, "Unknown reaction id");
 	}
 
-	const event = {
-		id: body.id,
-		timestamp: Date.now()
-	};
-
-	broadcast("reaction", JSON.stringify(event));
+	broadcast("reaction", JSON.stringify({ id: body.id, timestamp: Date.now() }));
 
 	return json({ success: true });
 };

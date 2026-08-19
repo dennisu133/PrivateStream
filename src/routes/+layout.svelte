@@ -16,7 +16,6 @@
 			(page.url.pathname === "/" && import.meta.env.BORING === "true")
 	);
 
-	// Generate dust particles with varied properties
 	const particles = Array.from({ length: 10 }, (_, i) => ({
 		id: i,
 		left: `${Math.random() * 100}%`,
@@ -44,11 +43,6 @@
 	class:film-grain={!isBoring}
 >
 	{#if !isBoring}
-		<!-- No ambient light layer here by design: the room is true black, so on
-		     OLED the panel itself is the dark theater. Grain and dust are the only
-		     atmosphere, and both are hard-edged. -->
-
-		<!-- Projector dust particles -->
 		<div class="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
 			{#each particles as p (p.id)}
 				<div

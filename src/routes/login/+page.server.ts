@@ -11,7 +11,6 @@ import { loginRateLimiter } from "$lib/server/rate-limit";
 import type { Actions, PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = async ({ locals }) => {
-	// If the user is already logged in, redirect them to the stream page
 	if (locals.user) {
 		redirect(303, "/");
 	}
@@ -36,7 +35,7 @@ export const actions: Actions = {
 		try {
 			clientAddress = getClientAddress();
 		} catch {
-			// The global limit still protects bcrypt if the adapter cannot resolve a client address.
+			// The global limit still protects bcrypt when no client address is available.
 		}
 
 		const rateLimit = loginRateLimiter.consume(clientAddress);
@@ -58,10 +57,8 @@ export const actions: Actions = {
 			"RateLimit-Reset": Math.ceil(rateLimit.resetAt / 1000).toString()
 		});
 
-		// Decode base64 hash back to original bcrypt hash
 		const passwordHash = Buffer.from(passwordHashBase64, "base64").toString();
 
-		// Use bcrypt to securely compare the submitted password with the stored hash
 		const match = await bcrypt.compare(password, passwordHash);
 
 		if (!match) {
@@ -77,7 +74,6 @@ export const actions: Actions = {
 
 		cookies.set(SESSION_COOKIE_NAME, sessionToken, SESSION_COOKIE_OPTIONS);
 
-		// Redirect to the stream page
 		redirect(303, "/");
 	}
 };
