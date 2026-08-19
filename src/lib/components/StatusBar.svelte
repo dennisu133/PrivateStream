@@ -1,10 +1,26 @@
 <script lang="ts">
 	import StatusIndicator from "$lib/components/StatusIndicator.svelte";
-	import { getConnectionIndicator, getStreamIndicator } from "$lib/types";
-	import { getConnectionState, getStreamStatus } from "$lib/state/connection.svelte";
+	import { connection } from "$lib/state/connection.svelte";
+	import type { IndicatorState, ReceivingState } from "$lib/types";
 
-	const connectionIndicator = $derived(getConnectionIndicator(getConnectionState()));
-	const streamIndicator = $derived(getStreamIndicator(getStreamStatus()));
+	type Indicator = { state: IndicatorState; label: string };
+
+	const connectionIndicators: Partial<Record<RTCPeerConnectionState, Indicator>> = {
+		connected: { state: "ok", label: "Connected" },
+		failed: { state: "warn", label: "Failed" },
+		disconnected: { state: "warn", label: "Disconnected" },
+		closed: { state: "warn", label: "Closed" }
+	};
+	const streamIndicators: Record<ReceivingState, Indicator> = {
+		pending: { state: "pending", label: "Checking..." },
+		live: { state: "ok", label: "Live" },
+		idle: { state: "warn", label: "No Stream" }
+	};
+
+	const connectionIndicator: Indicator = $derived(
+		connectionIndicators[connection.state] ?? { state: "pending", label: "Connecting..." }
+	);
+	const streamIndicator = $derived(streamIndicators[connection.stream]);
 </script>
 
 <div

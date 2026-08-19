@@ -5,11 +5,7 @@
 	import { resizable } from "$lib/attachments/resizable.svelte";
 	import FrameBrackets from "$lib/components/FrameBrackets.svelte";
 	import StatusBar from "$lib/components/StatusBar.svelte";
-	import {
-		getStreamStatus,
-		setConnectionState,
-		setStreamStatus
-	} from "$lib/state/connection.svelte";
+	import { connection } from "$lib/state/connection.svelte";
 	import type { WhepController } from "./actions/whep";
 	import poster from "$lib/assets/poster.webp";
 
@@ -21,7 +17,7 @@
 	let videoEl = $state<HTMLVideoElement | null>(null);
 	let controller: WhepController | null = null;
 
-	const isLive = $derived(getStreamStatus() === "live");
+	const isLive = $derived(connection.stream === "live");
 
 	onMount(() => {
 		if (!videoEl) return;
@@ -29,23 +25,23 @@
 		if (demoSrc) {
 			const video = videoEl;
 			const handlePlaying = () => {
-				setConnectionState("connected");
-				setStreamStatus("live");
+				connection.state = "connected";
+				connection.stream = "live";
 			};
 			video.addEventListener("playing", handlePlaying);
 
 			return () => {
 				video.removeEventListener("playing", handlePlaying);
-				setConnectionState("new");
-				setStreamStatus("pending");
+				connection.state = "new";
+				connection.stream = "pending";
 			};
 		}
 
 		if (endpoint) {
 			controller = startWhep(videoEl, {
 				endpoint,
-				onStateChange: (s) => setConnectionState(s),
-				onReceivingChange: (s) => setStreamStatus(s)
+				onStateChange: (state) => (connection.state = state),
+				onReceivingChange: (state) => (connection.stream = state)
 			});
 		}
 
