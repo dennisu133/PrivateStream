@@ -1,7 +1,10 @@
-<!-- Inline sizing accepts arbitrary caller values; frame-bracket inherits the frame opacity. -->
+<!-- Four corner brackets, absolutely positioned: the caller must be a positioning
+     context. frame-bracket takes the frame opacity from an inherited --edge.
+     The border-* classes have to stay written out literally, since Tailwind scans
+     source text and would not see them if they were derived from the sides. -->
 
 <script lang="ts">
-	let { size = 20, inset = 8 }: { size?: number; inset?: number } = $props();
+	let { size = 20 }: { size?: number } = $props();
 
 	const corners = [
 		["top", "left", "border-t border-l"],
@@ -11,10 +14,10 @@
 	] as const;
 </script>
 
-{#each corners as [y, x, edges] (edges)}
+{#each corners as [y, x, edges]}
 	<span
 		class="pointer-events-none absolute frame-bracket {edges}"
-		style="{y}: -{inset}px; {x}: -{inset}px; width: {size}px; height: {size}px;"
+		style="{y}: -8px; {x}: -8px; width: {size}px; height: {size}px;"
 		aria-hidden="true"
 	></span>
 {/each}
