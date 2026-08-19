@@ -77,6 +77,12 @@
 		} else if (e.key === "Enter" || e.key === " ") {
 			e.preventDefault();
 			handleSelect(reactions[selectedIndex]);
+		} else if (e.key === "Tab") {
+			// The options are not tab stops, so Tab steps the selection here. Without
+			// this the browser moved focus into an option while selectedIndex stayed
+			// put, and Enter then fired whichever reaction the ring was still on.
+			e.preventDefault();
+			selectedIndex = (selectedIndex + (e.shiftKey ? -1 : 1) + reactions.length) % reactions.length;
 		} else if (handleArrowKey(e.key)) {
 			e.preventDefault();
 		}
@@ -90,7 +96,7 @@
 		}
 
 		// The focused menu handles its own keys; otherwise intercept arrows before VolumeControls.
-		if (menuEl && document.activeElement === menuEl) return;
+		if (menuEl?.contains(document.activeElement)) return;
 		if (handleArrowKey(e.key)) {
 			e.preventDefault();
 		}
@@ -125,6 +131,7 @@
 		<div
 			role="listbox"
 			tabindex="0"
+			aria-activedescendant="reaction-option-{selectedIndex}"
 			class="theater-scrollbar grid min-h-0 auto-rows-max grid-cols-3 gap-2 overflow-y-auto p-3 outline-hidden"
 			bind:this={menuEl}
 			onkeydown={handleMenuKeydown}
@@ -132,6 +139,8 @@
 			{#each reactions as r, i (r.id)}
 				<button
 					type="button"
+					id="reaction-option-{i}"
+					tabindex="-1"
 					class="flex cursor-pointer flex-col gap-1.5 rounded-sm border border-theater-gold/12 bg-theater-gold/5 p-2 leading-tight text-theater-paper hover:bg-theater-gold/10
 						{i === selectedIndex ? 'bg-theater-gold/10 ring-2 ring-theater-gold/70' : ''}"
 					onclick={(e) => {
