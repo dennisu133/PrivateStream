@@ -84,11 +84,6 @@ export function createFixedWindowRateLimiter({
 
 		resetKey(key: string) {
 			keyedCounters.delete(key);
-		},
-
-		reset() {
-			keyedCounters.clear();
-			globalCounter = { count: 0, resetAt: 0 };
 		}
 	};
 }

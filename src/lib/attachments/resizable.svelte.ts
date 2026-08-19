@@ -1,7 +1,6 @@
 import type { Attachment } from "svelte/attachments";
 
 export type ResizableOptions = {
-	desktopQuery?: string;
 	/**
 	 * Selector for the child that defines the resizable content, when the element
 	 * also holds things that aren't part of it - a caption or status line under a
@@ -23,6 +22,7 @@ type Edge =
 	| null;
 
 const EDGE_THRESHOLD = 12;
+const DESKTOP_QUERY = "(min-width: 900px)";
 
 const CURSOR_MAP: Record<NonNullable<Edge>, string> = {
 	top: "ns-resize",
@@ -51,7 +51,7 @@ const CURSOR_MAP: Record<NonNullable<Edge>, string> = {
  * ```
  */
 export function resizable(options: ResizableOptions = {}): Attachment<HTMLElement> {
-	const { desktopQuery = "(min-width: 900px)", surfaceSelector } = options;
+	const { surfaceSelector } = options;
 
 	return (element) => {
 		let isResizable = false;
@@ -234,7 +234,7 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 		};
 
 		// Media query handling
-		const mediaQuery = window.matchMedia(desktopQuery);
+		const mediaQuery = window.matchMedia(DESKTOP_QUERY);
 
 		const enableResize = () => {
 			isResizable = true;

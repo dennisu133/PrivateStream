@@ -6,16 +6,15 @@
 	import FrameBrackets from "$lib/components/FrameBrackets.svelte";
 	import StatusBar from "$lib/components/StatusBar.svelte";
 	import { connection } from "$lib/state/connection.svelte";
-	import type { WhepController } from "./actions/whep";
 	import poster from "$lib/assets/poster.webp";
 
 	// When `demoSrc` is set the player loops a local video instead of starting
 	// WHEP, so the page works without authentication (used by /demo).
-	let { endpoint = "/api/whep", enableFunFeatures = true, demoSrc = null } = $props();
+	let { enableFunFeatures = true, demoSrc = null } = $props();
 
 	let frameEl = $state<HTMLDivElement | null>(null);
 	let videoEl = $state<HTMLVideoElement | null>(null);
-	let controller: WhepController | null = null;
+	let controller: ReturnType<typeof startWhep> | null = null;
 
 	const isLive = $derived(connection.stream === "live");
 
@@ -37,13 +36,10 @@
 			};
 		}
 
-		if (endpoint) {
-			controller = startWhep(videoEl, {
-				endpoint,
-				onStateChange: (state) => (connection.state = state),
-				onReceivingChange: (state) => (connection.stream = state)
-			});
-		}
+		controller = startWhep(videoEl, {
+			onStateChange: (state) => (connection.state = state),
+			onReceivingChange: (state) => (connection.stream = state)
+		});
 
 		return () => {
 			controller?.destroy();

@@ -1,13 +1,11 @@
 import type { Attachment } from "svelte/attachments";
 
 export type AutohideOptions = {
-	/** Delay in milliseconds before hiding after inactivity */
-	delay?: number;
 	/** Selector for the element to monitor for pointer events (defaults to parent element) */
 	monitorSelector?: string;
-	/** Whether autohide is initially enabled */
-	enabled?: boolean;
 };
+
+const HIDE_DELAY_MS = 2200;
 
 /**
  * Creates an autohide attachment that shows/hides an element based on pointer activity.
@@ -19,30 +17,16 @@ export type AutohideOptions = {
  * - `autohide:hold` - prevents hiding until released
  * - `autohide:release` - allows hiding again
  * - `autohide:show` - shows the element temporarily
- *
- * @example
- * ```svelte
- * <div {@attach autohide({ delay: 2000 })}>
- *   Controls that auto-hide
- * </div>
- * ```
  */
 export function autohide(options: AutohideOptions = {}): Attachment<HTMLElement> {
-	const { delay = 2200, monitorSelector, enabled = true } = options;
+	const { monitorSelector } = options;
 
 	return (element) => {
-		if (!enabled) {
-			element.setAttribute("data-visible", "true");
-			return;
-		}
-
-		let isVisible = true;
 		let pointerInside = false;
 		let holdDepth = 0;
 		let hideTimer: ReturnType<typeof setTimeout> | null = null;
 
 		const setVisible = (visible: boolean) => {
-			isVisible = visible;
 			element.setAttribute("data-visible", String(visible));
 		};
 
@@ -61,7 +45,7 @@ export function autohide(options: AutohideOptions = {}): Attachment<HTMLElement>
 					setVisible(false);
 				}
 				hideTimer = null;
-			}, delay);
+			}, HIDE_DELAY_MS);
 		};
 
 		const show = () => {

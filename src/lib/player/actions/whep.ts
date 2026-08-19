@@ -1,19 +1,13 @@
 import type { ReceivingState } from "$lib/types";
 
-export type WhepOptions = {
-	endpoint?: string;
+type WhepOptions = {
 	onStateChange?: (state: RTCPeerConnectionState) => void;
 	onReceivingChange?: (state: ReceivingState) => void;
-	reconnectDelayMs?: number;
-	maxReconnectDelayMs?: number;
 };
 
-export type WhepController = {
-	pc: RTCPeerConnection | null;
-	isReceiving: () => boolean;
-	destroy: () => void;
-};
-
+const ENDPOINT = "/api/whep";
+const RECONNECT_DELAY_MS = 1500;
+const MAX_RECONNECT_DELAY_MS = 30_000;
 const WATCHDOG_INTERVAL_MS = 2000;
 // Renegotiate when a "connected" session has delivered no media for this long.
 const STALL_RECONNECT_MS = 10_000;
@@ -21,18 +15,14 @@ const STALL_RECONNECT_MS = 10_000;
 // wait at least this long before tearing the connection down.
 const DISCONNECTED_GRACE_MS = 5000;
 
-export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}): WhepController {
-	const endpoint = opts.endpoint ?? "/api/whep";
-	const reconnectDelayMs = Math.max(250, opts.reconnectDelayMs ?? 1500);
-	const maxReconnectDelayMs = Math.max(reconnectDelayMs, opts.maxReconnectDelayMs ?? 30000);
-
+export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}) {
 	let stopped = false;
 	let pc: RTCPeerConnection | null = null;
 	let reconnectTimer: number | null = null;
 	let statsTimer: number | null = null;
 	let receiving: ReceivingState = "pending";
 	let last = { bytes: 0, updatedAt: 0 };
-	let currentReconnectDelayMs = reconnectDelayMs;
+	let currentReconnectDelayMs = RECONNECT_DELAY_MS;
 	let sessionUrl: string | null = null;
 
 	console.log("[WHEP] Starting WHEP connection");
@@ -103,7 +93,7 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}): Wh
 	const negotiate = async (target: RTCPeerConnection) => {
 		const offer = await target.createOffer();
 		await target.setLocalDescription(offer);
-		const res = await fetch(endpoint, {
+		const res = await fetch(ENDPOINT, {
 			method: "POST",
 			headers: { "Content-Type": "application/sdp" },
 			body: target.localDescription?.sdp ?? ""
@@ -160,7 +150,7 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}): Wh
 			await negotiate(localPc);
 		} catch (e) {
 			console.error("[WHEP] Connection negotiation failed", e);
-			currentReconnectDelayMs = Math.min(maxReconnectDelayMs, currentReconnectDelayMs * 2);
+			currentReconnectDelayMs = Math.min(MAX_RECONNECT_DELAY_MS, currentReconnectDelayMs * 2);
 			scheduleReconnect();
 		}
 	};
@@ -186,7 +176,7 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}): Wh
 					// Media is flowing again; cancel any pending stall reconnect
 					// and reset the backoff only on proof of a healthy stream.
 					clearReconnect();
-					currentReconnectDelayMs = reconnectDelayMs;
+					currentReconnectDelayMs = RECONNECT_DELAY_MS;
 				}
 				if (bytes > 0 && receiving !== "live") {
 					console.log("[WHEP] Data received");
@@ -203,7 +193,7 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}): Wh
 				// change, so renegotiate ourselves once the stall persists.
 				if (now - last.updatedAt >= STALL_RECONNECT_MS && reconnectTimer === null) {
 					console.warn(`[WHEP] No data for ${STALL_RECONNECT_MS}ms while connected; renegotiating`);
-					currentReconnectDelayMs = Math.min(maxReconnectDelayMs, currentReconnectDelayMs * 2);
+					currentReconnectDelayMs = Math.min(MAX_RECONNECT_DELAY_MS, currentReconnectDelayMs * 2);
 					scheduleReconnect();
 				}
 			}
@@ -214,10 +204,6 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}): Wh
 	statsTimer = window.setInterval(() => void checkStats(), WATCHDOG_INTERVAL_MS);
 
 	return {
-		get pc() {
-			return pc;
-		},
-		isReceiving: () => receiving === "live",
 		destroy: () => {
 			if (stopped) return;
 			stopped = true;

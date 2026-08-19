@@ -6,14 +6,13 @@
 	const STEP = 0.05;
 	const SCROLL_STEP = 0.02;
 	const DEFAULT_VOLUME = 0.5;
+	const STORAGE_KEY = "player.volume";
 
 	let {
 		video = null,
-		storageKey = "player.volume",
 		disableGlobalInput = false
 	}: {
 		video?: HTMLVideoElement | null;
-		storageKey?: string;
 		disableGlobalInput?: boolean;
 	} = $props();
 
@@ -41,7 +40,7 @@
 		if (typeof window === "undefined") return;
 		try {
 			window.localStorage.setItem(
-				storageKey,
+				STORAGE_KEY,
 				JSON.stringify({
 					volume,
 					isMuted,
@@ -135,7 +134,7 @@
 	const restoreState = () => {
 		if (typeof window === "undefined") return;
 		try {
-			const raw = window.localStorage.getItem(storageKey);
+			const raw = window.localStorage.getItem(STORAGE_KEY);
 			if (!raw) return;
 			const saved = JSON.parse(raw) as {
 				volume?: number;
