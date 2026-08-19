@@ -9,7 +9,7 @@
 		if (detonating) return;
 		detonating = true;
 
-		// Hide the cat only when the final blast lands.
+		// Hide the cat after the explosion effect is done
 		explode(event.clientX, event.clientY, {
 			onFinale: () => (isGifVisible = false)
 		});
