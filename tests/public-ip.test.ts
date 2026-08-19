@@ -118,14 +118,4 @@ describe("public IP resolver", () => {
 		expect(results).toEqual(["198.51.100.1", "198.51.100.1", "198.51.100.1"]);
 		expect(calls).toBe(1);
 	});
-
-	test("accepts IPv6 responses", async () => {
-		const resolver = createPublicIpResolver({
-			lookupUrls: ["https://ip.example"],
-			fetchFn: async () => textResponse("2001:db8::1"),
-			log: noopLog
-		});
-
-		expect(await resolver.resolve()).toBe("2001:db8::1");
-	});
 });

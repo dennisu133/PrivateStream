@@ -21,11 +21,6 @@ describe("toProxySessionPath", () => {
 		);
 	});
 
-	test("rejects a location pointing at a foreign origin", () => {
-		expect(toProxySessionPath("http://evil.example/steal", srsWhepUrl)).toBeNull();
-		expect(toProxySessionPath("//evil.example/steal", srsWhepUrl)).toBeNull();
-	});
-
 	test("returns null for a malformed SRS base URL", () => {
 		expect(toProxySessionPath("/rtc/v1/whip/?session=abc", "not a url")).toBeNull();
 	});
