@@ -52,6 +52,21 @@
 	initial-value: 0.22;
 }
 
+/* Full-viewport noise overlay. Global so the root layout needs no <style> block,
+   which would stamp a scope class onto every tag it renders, <meta> included. */
+@utility film-grain {
+	&::before {
+		content: "";
+		position: fixed;
+		inset: 0;
+		opacity: 0.05;
+		pointer-events: none;
+		z-index: 0;
+		background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+		background-size: 256px 256px;
+	}
+}
+
 /* The gold hairline above and below a frame. Both --edge and --edge-scale are read
    per element, so a parent transitioning --edge fades every strip beneath it. */
 @utility frame-edge {
