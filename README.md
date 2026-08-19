@@ -1,145 +1,131 @@
-# Private Streaming Site
+# PrivateStream
 
-A password-gated private livestream viewer trying to achieve as little latency as possible using [WebRTC](https://webrtc.org/). This project uses [OBS Studio](https://obsproject.com/) for capturing and [SRS](https://ossrs.io/lts/en-us/) for distributing the stream.
+PrivateStream is a self-hosted, password-protected livestream viewer built for low latency. OBS publishes the stream to [SRS](https://ossrs.io/lts/en-us/) over WHIP, and viewers receive it over [WebRTC](https://webrtc.org/).
 
-> This is a personal project made for a very specific setup filled with inside jokes. This is generally not meant to be reproduced but I'm honored if you do.
-
-## Preview
+It is a personal alternative to Discord streaming. The setup is more involved, but you control the bitrate, resolution, and hosting.
 
 ![player](/screenshots/player.webp)
 
-## Prerequesites
+## Requirements
 
-### Setting up SRS
+- [Bun](https://bun.com/)
+- [Docker](https://docs.docker.com/get-started/get-docker/)
+- [OBS Studio](https://obsproject.com/)
+- An HTTPS endpoint for production
 
-This project was developed using SRS 6.0. SRS is easily deployed using [docker](https://docs.docker.com/get-started/get-docker/). SRS relies on a [candidate](https://ossrs.net/lts/en-us/docs/v6/doc/webrtc#config-candidate) environment variable to pass the IP of the stream source to the viewer. When using this project make sure to assign it a wildcard ('\*') because the backend transmits your public IP to SRS (via the `eip` query parameter) during connection of a new viewer.
+## Setup
 
-The backend determines your public IP as follows:
+Install the dependencies and create your local configuration:
 
-1. If `SERVER_PUBLIC_IP` is set in `.env`, it is used directly and no external service is ever contacted. Recommended whenever your public IP is static (e.g. a VPS).
-2. Otherwise the IP is fetched from public echo services ([api.ipify.org](https://www.ipify.org/), ipv4.icanhazip.com and checkip.amazonaws.com by default, configurable via `IP_LOOKUP_URLS`), trying each in order. The result is cached for 60 seconds, so a changing residential IP is picked up within about a minute.
-3. If every lookup fails, the last known IP is reused so viewers can keep connecting during a lookup outage.
+```sh
+bun install
+cp .env.example .env
+```
 
-For a simple setup using the default [rtc.conf](https://github.com/ossrs/srs/blob/develop/trunk/conf/rtc.conf) you can run: \
-`docker run --rm -it -p 1935:1935 -p 1985:1985 -p 8080:8080 --env CANDIDATE="*" -p 8000:8000/udp ossrs/srs:6 ./objs/srs -c conf/rtc.conf`
-
-If you want to use a custom config like the one provided in this project you will have to pass it to the container. A suitable location for the [custom.conf](tools/custom.conf) is inside `/opt/srs/custom.conf`. Using this path you can bind the config and apply it using the following command: \
-`docker run --rm -it -p 1935:1935 -p 1985:1985 -p 8080:8080 -p 8000:8000/udp -v /opt/srs/custom.conf:/usr/local/srs/conf/custom.conf ossrs/srs:6 ./objs/srs -c conf/custom.conf`
-
-Keep in mind that this is a temporary startup until the console is closed. You can test if if SRS is running by accessing: `<docker_host_IP>:8080`.
-
-### Setting up OBS
-
-In order to connect to the SRS server you need to specify its IP address. For this project use WHIP with the following settings (make sure to replace \<docker_host_IP\>):
-
-- Server: http://\<docker_host_IP\>:1985/rtc/v1/whip/?app=live&stream=livestream
-- Bearer Token: livestream
-
-Since the goal is achieving the lowest latency possible there are specific OBS settings we can use. Head over to the Output settings and enable Advanced mode. The [recommended settings](https://ossrs.net/lts/en-us/blog/Experience-Ultra-Low-Latency-Live-Streaming-with-OBS-WHIP) are:
-
-- Video Encoder: x264
-- Rate Control: CBR
-- Bitrate: depends on your connection
-- Keyframe interval: 1s
-- CPU Usage Preset: fast
-- Profile: baseline
-- Tune: zerolatency
-- x264 options: bframes=0
-
-### HTTPS reverse proxy
-
-[Nginx-Proxy-Manager](https://nginxproxymanager.com/) is a convenient way to terminate HTTPS and route incoming traffic to the machine where **this SvelteKit application is running**. Production authentication cookies are `Secure`, so internet-facing deployments must use HTTPS.
-
-Create a proxy host with the following settings and set your SSL certificate:
-
-- Domain Names: your domain name (e.g. stream.example.com)
-- Scheme: http
-- Forward Hostname/ IP: this applications IP (e.g. 192.168.1.104)
-- Forward Port: 3000 (the default deployment port of Sveltekit)
-- Enable Cache Assets, Block Commin Exploits, Websockets Support (!), Force SSL, Http/2 Supprt, HSTS Enabled/Subdomains
-
-## Development
-
-Install the dependencies using a node package manager of your choice, e.g. `bun install`. Keep in mind that the scripts inside [package.json](/package.json) are hardcoded for [bun](https://bun.com/). You will have to change them if you use anything else.
-
-If you want to adjust the existing code you can start up a development server using `bun run dev`. The stream will be captured this way as well. The development server binds to `127.0.0.1` by default and should not be exposed directly to a network.
-
-If remote development is unavoidable, use a VPN or a TLS-protected reverse proxy with an independent Access List. You can explicitly opt in to a network listener with `bun run dev -- --host 0.0.0.0`.
-
-## Deployment
-
-Before deploying you need to set some environment variables within a `.env` file. Once you are done you can build and deploy this project by using `bun run build`. This will create a production-ready [Node](https://nodejs.org/en/about) environment.
-
-If you want to deploy on a VPS you will need:
-
-- build/ directory
-- package.json
-- .env file
-
-Install the production dependencies with `bun install --production` and run the application with `bun run --env-file=.env build/index.js`
-
-_Node alternative: `node --env-file=.env build/index.js` (Requires Node 20.6.0 or higher!)_
-
-### Environment Variables
-
-Copy `.env.example` to `.env` and fill in your own values. Never commit `.env`.
-
-Generate the bcrypt password verifier using a hidden prompt so the password does not appear in shell history or process listings:
+Generate the password hash and session secret, then copy both values into `.env`:
 
 ```sh
 bun tools/hash-password.js
-```
-
-Because raw bcrypt hashes are sometimes difficult to parse, the script additionally wraps the hash in [base64](https://en.wikipedia.org/wiki/Base64).
-
-Sessions use a separate high-entropy signing secret. Generate it with:
-
-```sh
 bun tools/generate-session-secret.js
 ```
 
-Store the result as `SESSION_SECRET`. Rotating it invalidates every existing session but does not change the stream password.
-
-Set `ORIGIN` to the one public HTTPS origin from which viewers access the app. This avoids origin ambiguity across Cloudflare and a reverse proxy:
+Set `SRS_WHEP_URL` to the SRS playback endpoint. Replace the host with the address of your SRS server:
 
 ```sh
-ORIGIN=https://stream.example.com
+SRS_WHEP_URL="http://SRS_HOST:1985/rtc/v1/whep/?app=live&stream=livestream"
 ```
 
-### Reverse proxy client addresses
+### Start SRS
 
-Login throttling has both a global budget and a per-client budget. When the Bun server is behind one trusted reverse proxy, configure:
+This project uses SRS 6 and includes a working [configuration](tools/custom.conf). From the repository root, run:
 
 ```sh
-PROTOCOL_HEADER=x-forwarded-proto
-HOST_HEADER=x-forwarded-host
+docker run --rm -it \
+  -p 1985:1985 \
+  -p 8080:8080 \
+  -p 8000:8000 \
+  -p 8000:8000/udp \
+  -v "$PWD/tools/custom.conf:/usr/local/srs/conf/custom.conf:ro" \
+  ossrs/srs:6 ./objs/srs -c conf/custom.conf
+```
+
+This container stops when you close the terminal. Open `http://SRS_HOST:8080` to confirm that SRS is running.
+
+SRS needs to advertise an address that viewers can reach. Set `SERVER_PUBLIC_IP` when that address is known. If you omit it, PrivateStream uses public IP lookup services, caches the result for 60 seconds, and reuses the last known address if a later lookup fails. You can override the services with `IP_LOOKUP_URLS`.
+
+Viewers need access to SRS on port 8000. OBS and PrivateStream need access to port 1985.
+
+### Configure OBS
+
+Choose WHIP as the stream service and use:
+
+```text
+Server: http://SRS_HOST:1985/rtc/v1/whip/?app=live&stream=livestream
+Bearer token: livestream
+```
+
+For low latency, start with the [SRS recommendations](https://ossrs.net/lts/en-us/blog/Experience-Ultra-Low-Latency-Live-Streaming-with-OBS-WHIP):
+
+| OBS setting       | Value                    |
+| ----------------- | ------------------------ |
+| Video encoder     | x264                     |
+| Rate control      | CBR                      |
+| Bitrate           | Based on your connection |
+| Keyframe interval | 1 second                 |
+| CPU preset        | fast                     |
+| Profile           | baseline                 |
+| Tune              | zerolatency              |
+| x264 options      | `bframes=0`              |
+
+### Run the app
+
+```sh
+bun run dev
+```
+
+Open `http://127.0.0.1:5173`. The development server only listens on localhost. If you need remote access, use a VPN or a TLS reverse proxy instead of exposing the development server directly.
+
+## Configuration
+
+[`.env.example`](.env.example) documents every option. The main ones are:
+
+| Variable                        | Purpose                                                                                                   |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `SITE_PASSWORD_HASH`            | Base64-wrapped bcrypt hash generated by `tools/hash-password.js`                                          |
+| `SESSION_SECRET`                | Session signing secret generated by `tools/generate-session-secret.js`; rotating it logs out every viewer |
+| `SRS_WHEP_URL`                  | SRS playback endpoint                                                                                     |
+| `ORIGIN`                        | Public HTTPS origin, such as `https://stream.example.com`                                                 |
+| `SERVER_PUBLIC_IP`              | Address advertised to WebRTC viewers                                                                      |
+| `BORING=true`                   | Uses the plain player as the home page and omits the custom widgets at build time                         |
+| `REACTIONS=false`               | Disables reactions and their API                                                                          |
+| `DANGEROUSLY_DISABLE_AUTH=true` | Disables the password gate for local testing only                                                         |
+
+Changing `BORING` requires a rebuild. Never use `DANGEROUSLY_DISABLE_AUTH` in production or commit your `.env` file.
+
+## Production
+
+Build and start the Bun server:
+
+```sh
+bun run build
+bun run --env-file=.env build/index.js
+```
+
+The server listens on port 3000 by default. Put it behind an HTTPS reverse proxy and set `ORIGIN` to the public URL. Production login cookies require HTTPS.
+
+Only the reverse proxy should be able to reach the Bun port. If you use forwarded client addresses for rate limiting, trust headers from known proxies only. For one proxy, use:
+
+```sh
 ADDRESS_HEADER=x-forwarded-for
 XFF_DEPTH=1
 ```
 
-Put these values in `.env` if you use them. Do not trust forwarded headers when clients can connect directly to the Bun port; firewall that port so only the reverse proxy can reach it. Adjust `XFF_DEPTH` if more than one trusted proxy is in front of the app.
+With Cloudflare as the only public route to the origin, use `ADDRESS_HEADER=cf-connecting-ip` instead. Adjust `XFF_DEPTH` when more than one trusted proxy handles the request.
 
-For a Cloudflare-proxied domain, `ADDRESS_HEADER=cf-connecting-ip` is simpler than counting the Cloudflare and Nginx hops, provided the Bun origin is reachable only through those trusted proxies.
+Run a single PrivateStream process. Reactions, rate limits, and the public IP cache are stored in memory and are not shared between instances.
 
-### PM2
-
-For persistent hosting I recommend using [PM2](https://pm2.keymetrics.io/). This application will keep your server running 24/7.
-
-> [!IMPORTANT]
-> Always run this application as a **single process** (PM2 fork mode, the default). Live state — connected reaction listeners, rate-limit counters and the cached public IP — is held in memory, so PM2 cluster mode (or any multi-instance setup) would split viewers across processes that cannot see each other's reactions.
-
-The app exposes an unauthenticated liveness probe at `/healthz` (returns `200 ok`). Point your uptime monitor at it to distinguish "process running" from "app actually serving requests". It does not check SRS or the stream itself.
-
-> [!NOTE]
-> PM2's Bun interpreter cannot currently start this async ESM build directly ([upstream issue](https://github.com/oven-sh/bun/issues/19942)). Run Bun as an executable with PM2's interpreter disabled instead.
-
-1. Install globally using `bun install pm2 -g`
-2. Link bun as node using `ln -s $(which bun) /usr/local/bin/node`
-3. Start the application using `pm2 start "$(which bun)" --name privatestream --interpreter none -- build/index.js`
-4. Enable autostart using `pm2 startup`
-5. Save the configuration using `pm2 save`
+`/healthz` is an unauthenticated liveness endpoint that returns `200 ok`. It checks the app, not SRS or the stream.
 
 ## Acknowledgements
 
-- **[SRS](https://github.com/ossrs/srs):** For providing the fantastic framework that makes WebRTC relaying accessible and easy to implement.
-- **[OBS Studio](https://github.com/obsproject/obs-studio):** For being the gold standard in broadcasting and making the streaming source setup effortless.
+PrivateStream uses [SRS](https://github.com/ossrs/srs) for WebRTC distribution and [OBS Studio](https://github.com/obsproject/obs-studio) for capture.
