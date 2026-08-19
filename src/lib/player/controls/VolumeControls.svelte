@@ -188,21 +188,25 @@
 		{/if}
 	</Button>
 
-	<input
-		class="w-30"
-		type="range"
-		min="0"
-		max="1"
-		step={STEP}
-		value={volume}
-		oninput={handleInput}
-		title="Adjust volume (↑/↓/scroll)"
-		aria-label="Volume"
-		aria-valuemin={0}
-		aria-valuemax={100}
-		aria-valuenow={volumePercent}
-		aria-valuetext={volumeText}
-	/>
+	<!-- h-8 matches the adjacent Button, so the focus ring is the same box. The
+	     negative margin cancels the padding, leaving the row spacing unchanged. -->
+	<span class="volume-box -mx-1.5 inline-flex h-8 items-center rounded-sm px-1.5">
+		<input
+			class="w-30"
+			type="range"
+			min="0"
+			max="1"
+			step={STEP}
+			value={volume}
+			oninput={handleInput}
+			title="Adjust volume (↑/↓/scroll)"
+			aria-label="Volume"
+			aria-valuemin={0}
+			aria-valuemax={100}
+			aria-valuenow={volumePercent}
+			aria-valuetext={volumeText}
+		/>
+	</span>
 </div>
 
 <style>
@@ -219,6 +223,12 @@
 
 	input[type="range"]:hover {
 		background: color-mix(in oklch, var(--color-theater-gold) 30%, transparent);
+	}
+
+	/* The ring lives on the wrapper: an outline on the 3px input inherits the
+	   track's radius and renders as a pill. rounded-sm matches the Buttons. */
+	.volume-box:has(input:focus-visible) {
+		outline: 1px solid color-mix(in oklch, var(--color-theater-gold) 40%, transparent);
 	}
 
 	input[type="range"]::-webkit-slider-thumb {

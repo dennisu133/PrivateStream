@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { SmilePlus } from "@lucide/svelte";
-	import { autohide } from "$lib/attachments/autohide.svelte";
+	import { autohide } from "$lib/attachments/autohide";
 	import Button from "./controls/Button.svelte";
 	import FullscreenToggle from "./controls/FullscreenToggle.svelte";
 	import VolumeControls from "./controls/VolumeControls.svelte";
@@ -21,7 +21,6 @@
 		enableReactions?: boolean;
 	} = $props();
 
-	const frameId = $derived(frame?.id ?? undefined);
 	let menuOpen = $state(false);
 	let toggleButtonEl = $state<HTMLElement | null>(null);
 	let activeReaction = $state<Reaction | null>(null);
@@ -96,8 +95,8 @@
 {/if}
 
 <div
-	class="pointer-events-auto absolute right-3 bottom-3 flex items-center gap-3 rounded-sm border border-theater-gold/12 bg-black/55 px-3 py-2 backdrop-blur-md transition-[opacity,transform,visibility] duration-300 ease-cinema data-[visible=false]:invisible data-[visible=false]:translate-y-2 data-[visible=false]:opacity-0"
-	{@attach autohide({ monitorSelector: frameId ? `#${frameId}` : undefined })}
+	class="pointer-events-auto absolute right-3 bottom-3 flex items-center gap-3 rounded-sm border border-theater-gold/12 bg-black/55 px-3 py-2 backdrop-blur-md transition-[opacity,transform] duration-300 ease-cinema data-[visible=false]:pointer-events-none data-[visible=false]:translate-y-2 data-[visible=false]:opacity-0"
+	{@attach autohide()}
 >
 	{#if enableReactions}
 		<span bind:this={toggleButtonEl}>
