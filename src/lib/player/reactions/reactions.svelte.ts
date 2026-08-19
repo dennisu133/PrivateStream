@@ -41,41 +41,15 @@ type ReactionListener = (event: ReactionEvent) => void;
 // Lookup map for enriching SSE events with full reaction data
 const reactionMap = new Map(reactions.map((r) => [r.id, r]));
 
-const SSE_ENDPOINT = "/api/reactions";
-const RECONNECT_DELAY = 2000;
-const MAX_RECONNECT_DELAY = 30_000;
-
 const listeners = new Set<ReactionListener>();
 let eventSource: EventSource | null = null;
-let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-let reconnectDelay = RECONNECT_DELAY;
-
-function clearReconnectTimer() {
-	if (reconnectTimer !== null) {
-		clearTimeout(reconnectTimer);
-		reconnectTimer = null;
-	}
-}
-
-function scheduleReconnect() {
-	clearReconnectTimer();
-	reconnectTimer = setTimeout(() => {
-		reconnectTimer = null;
-		connect();
-	}, reconnectDelay);
-	reconnectDelay = Math.min(reconnectDelay * 1.5, MAX_RECONNECT_DELAY);
-}
 
 function connect() {
 	if (typeof window === "undefined" || eventSource !== null || listeners.size === 0) {
 		return;
 	}
 
-	eventSource = new EventSource(SSE_ENDPOINT, { withCredentials: true });
-
-	eventSource.addEventListener("connected", () => {
-		reconnectDelay = RECONNECT_DELAY;
-	});
+	eventSource = new EventSource("/api/reactions", { withCredentials: true });
 
 	eventSource.addEventListener("reaction", (e) => {
 		try {
@@ -91,11 +65,6 @@ function connect() {
 			// Ignore malformed events
 		}
 	});
-
-	eventSource.onerror = () => {
-		disconnect();
-		scheduleReconnect();
-	};
 }
 
 function disconnect() {
@@ -110,7 +79,7 @@ function disconnect() {
  * Manages connection lifecycle automatically:
  * - Connects when the first listener subscribes
  * - Disconnects when the last listener unsubscribes
- * - Reconnects with exponential backoff on errors
+ * - Lets EventSource reconnect automatically on errors
  */
 export function subscribeToReactions(listener: ReactionListener): () => void {
 	listeners.add(listener);
@@ -124,8 +93,6 @@ export function subscribeToReactions(listener: ReactionListener): () => void {
 
 		if (listeners.size === 0) {
 			disconnect();
-			clearReconnectTimer();
-			reconnectDelay = RECONNECT_DELAY;
 		}
 	};
 }

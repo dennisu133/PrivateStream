@@ -77,7 +77,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 			streamController = controller;
 			streams.add(controller);
 			startKeepAlive();
-			controller.enqueue(new TextEncoder().encode("event: connected\ndata: {}\n\n"));
+			controller.enqueue(new TextEncoder().encode(": connected\n\n"));
 		},
 		cancel() {
 			streams.delete(streamController);
