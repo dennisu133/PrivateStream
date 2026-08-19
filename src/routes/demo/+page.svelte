@@ -3,9 +3,9 @@
 <!-- disabled because their endpoints require a session. -->
 
 <script lang="ts">
-	import Catchip from "$lib/components/Catchip.svelte";
+	import Catchip from "virtual:catchip-widget";
 	import Player from "$lib/player/Player.svelte";
-	import Neko from "$lib/components/Neko.svelte";
+	import Neko from "virtual:neko-widget";
 </script>
 
 <svelte:head>

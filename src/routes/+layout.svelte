@@ -11,7 +11,10 @@
 	const color = import.meta.env.VITE_META_COLOR || "#E4B583";
 	const image = import.meta.env.VITE_META_IMAGE || "/meta.gif";
 
-	const isBoring = $derived(page.url.pathname === "/boring");
+	const isBoring = $derived(
+		page.url.pathname === "/boring" ||
+			(page.url.pathname === "/" && import.meta.env.BORING === "true")
+	);
 
 	// Generate dust particles with varied properties
 	const particles = Array.from({ length: 10 }, (_, i) => ({

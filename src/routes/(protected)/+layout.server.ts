@@ -1,3 +1,4 @@
+import { env } from "$env/dynamic/private";
 import { redirect } from "@sveltejs/kit";
 import type { LayoutServerLoad } from "./$types";
 
@@ -6,5 +7,5 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		redirect(303, "/login");
 	}
 
-	return {};
+	return { reactionsEnabled: env.REACTIONS !== "false" };
 };

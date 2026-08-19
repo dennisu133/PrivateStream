@@ -1,4 +1,5 @@
 import { error, json } from "@sveltejs/kit";
+import { env } from "$env/dynamic/private";
 import { createFixedWindowRateLimiter } from "$lib/server/rate-limit";
 import type { RequestHandler } from "./$types";
 
@@ -66,6 +67,10 @@ const validReactionIds = new Set(
  * SSE endpoint: clients connect here to receive real-time reaction events.
  */
 export const GET: RequestHandler = async ({ locals }) => {
+	if (env.REACTIONS === "false") {
+		throw error(404, "Reactions are disabled");
+	}
+
 	if (!locals.user) {
 		throw error(401, "Unauthorized");
 	}
@@ -100,6 +105,10 @@ export const GET: RequestHandler = async ({ locals }) => {
  * Body: { id: string }
  */
 export const POST: RequestHandler = async ({ locals, request, getClientAddress, setHeaders }) => {
+	if (env.REACTIONS === "false") {
+		throw error(404, "Reactions are disabled");
+	}
+
 	if (!locals.user) {
 		throw error(401, "Unauthorized");
 	}
