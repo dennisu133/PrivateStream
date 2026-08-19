@@ -6,13 +6,11 @@
 	let {
 		toggleButtonEl = null,
 		onSelect,
-		onClose,
-		onInteract
+		onClose
 	}: {
 		toggleButtonEl?: HTMLElement | null;
 		onSelect: (reaction: Reaction) => void;
 		onClose: () => void;
-		onInteract?: () => void;
 	} = $props();
 
 	let selectedIndex = $state(0);
@@ -48,19 +46,15 @@
 
 		if (key === "ArrowLeft") {
 			selectedIndex = (selectedIndex - 1 + reactions.length) % reactions.length;
-			onInteract?.();
 			return true;
 		} else if (key === "ArrowRight") {
 			selectedIndex = (selectedIndex + 1) % reactions.length;
-			onInteract?.();
 			return true;
 		} else if (key === "ArrowUp") {
 			selectedIndex = Math.max(0, selectedIndex - COLUMNS);
-			onInteract?.();
 			return true;
 		} else if (key === "ArrowDown") {
 			selectedIndex = Math.min(reactions.length - 1, selectedIndex + COLUMNS);
-			onInteract?.();
 			return true;
 		}
 		return false;
@@ -138,7 +132,6 @@
 						{i === selectedIndex ? 'bg-theater-gold/10 ring-2 ring-theater-gold/70' : ''}"
 					onclick={(e) => {
 						e.stopPropagation();
-						onInteract?.();
 						handleSelect(r);
 					}}
 					role="option"

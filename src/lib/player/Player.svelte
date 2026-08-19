@@ -1,10 +1,6 @@
 <script lang="ts">
 	import { onMount } from "svelte";
-	import PlayerButtons from "./PlayerButtons.svelte";
-	import ReactionButton from "./reactions/ReactionButton.svelte";
-	import ReactionSystem from "./reactions/ReactionSystem.svelte";
-	import VolumeControls from "./controls/VolumeControls.svelte";
-	import FullscreenToggle from "./controls/FullscreenToggle.svelte";
+	import PlayerControls from "./PlayerControls.svelte";
 	import { startWhep } from "./actions/whep";
 	import { resizable } from "$lib/attachments/resizable.svelte";
 	import FrameBrackets from "$lib/components/FrameBrackets.svelte";
@@ -24,8 +20,6 @@
 	let frameEl = $state<HTMLDivElement | null>(null);
 	let videoEl = $state<HTMLVideoElement | null>(null);
 	let controller: WhepController | null = null;
-
-	let reactionSystem = $state<ReturnType<typeof ReactionSystem> | null>(null);
 
 	const isLive = $derived(getStreamStatus() === "live");
 
@@ -113,25 +107,7 @@
 				Your browser does not support video playback.
 			</video>
 
-			{#if enableFunFeatures}
-				<ReactionSystem bind:this={reactionSystem} {frameEl} />
-			{/if}
-
-			<PlayerButtons frame={frameEl}>
-				<!-- Rendered during SSR too (no `reactionSystem` gate): the button
-				     popping in after hydration shifted the whole controls bar (CLS) -->
-				{#if enableFunFeatures}
-					<ReactionButton
-						isOpen={reactionSystem?.isOpen() ?? false}
-						onToggle={() => reactionSystem?.toggle()}
-						onInteract={() => reactionSystem?.interact()}
-						onMount={(el) => reactionSystem?.setToggleButtonEl(el)}
-					/>
-				{/if}
-
-				<VolumeControls video={videoEl} disableGlobalInput={reactionSystem?.isOpen() ?? false} />
-				<FullscreenToggle target={frameEl ?? videoEl} />
-			</PlayerButtons>
+			<PlayerControls frame={frameEl} video={videoEl} enableReactions={enableFunFeatures} />
 		</div>
 
 		<!-- Bottom rule, carried at two thirds the top's weight so the frame reads
