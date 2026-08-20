@@ -2,6 +2,7 @@
 	import { onMount } from "svelte";
 	import { Volume, Volume1, Volume2, VolumeX } from "@lucide/svelte";
 	import Button from "./Button.svelte";
+	import { dispatchAutohide } from "$lib/attachments/autohide";
 
 	const STEP = 0.05;
 	const SCROLL_STEP = 0.02;
@@ -24,9 +25,7 @@
 	const volumePercent = $derived(Math.round(volume * 100));
 	const volumeText = $derived(isMuted ? "Muted" : `${volumePercent}%`);
 
-	const dispatchShow = () => {
-		containerEl?.dispatchEvent(new CustomEvent("autohide:show", { bubbles: true }));
-	};
+	const dispatchShow = () => dispatchAutohide(containerEl, "autohide:show");
 
 	const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 

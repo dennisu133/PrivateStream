@@ -2,6 +2,7 @@
 	import { onMount } from "svelte";
 	import { Maximize, Minimize } from "@lucide/svelte";
 	import Button from "./Button.svelte";
+	import { dispatchAutohide } from "$lib/attachments/autohide";
 
 	let {
 		target = null
@@ -11,11 +12,8 @@
 
 	let isFullscreen = $state(false);
 
-	const dispatchShow = () => {
-		// target is the frame, which is the autohide monitor, so this lands on its
-		// listener directly; from anything nested it still bubbles up to the same one.
-		target?.dispatchEvent(new CustomEvent("autohide:show", { bubbles: true }));
-	};
+	// target is the frame, which is the autohide monitor itself.
+	const dispatchShow = () => dispatchAutohide(target, "autohide:show");
 
 	const syncFullscreen = () => {
 		isFullscreen = document.fullscreenElement === target;

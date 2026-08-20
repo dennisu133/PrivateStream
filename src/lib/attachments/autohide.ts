@@ -2,11 +2,17 @@ import type { Attachment } from "svelte/attachments";
 
 const HIDE_DELAY_MS = 2200;
 
+export type AutohideEvent = "autohide:hold" | "autohide:release" | "autohide:show";
+
+/** Raise one of the events above. They bubble, so any node inside the monitored parent works. */
+export function dispatchAutohide(target: EventTarget | null | undefined, event: AutohideEvent) {
+	target?.dispatchEvent(new CustomEvent(event, { bubbles: true }));
+}
+
 /**
  * Toggles `data-visible` on the element after pointer or focus activity in its
- * parent. Controls may dispatch `autohide:hold`, `autohide:release`, or
- * `autohide:show`; those bubble, so the parent listener catches them whether they
- * are raised on the parent itself or anywhere inside the controls.
+ * parent. Controls raise the events above rather than calling in directly, and the
+ * parent listener catches them whether they come from the parent or from a control.
  */
 export function autohide(): Attachment<HTMLElement> {
 	return (element) => {

@@ -24,9 +24,15 @@
 
 	onMount(() => {
 		if (!videoEl) return;
+		const video = videoEl;
+
+		// connection is a shared singleton, so both paths hand it back as they found it.
+		const reset = () => {
+			connection.state = "new";
+			connection.stream = "pending";
+		};
 
 		if (demoSrc) {
-			const video = videoEl;
 			const handlePlaying = () => {
 				connection.state = "connected";
 				connection.stream = "live";
@@ -35,17 +41,19 @@
 
 			return () => {
 				video.removeEventListener("playing", handlePlaying);
-				connection.state = "new";
-				connection.stream = "pending";
+				reset();
 			};
 		}
 
-		const controller = startWhep(videoEl, {
+		const controller = startWhep(video, {
 			onStateChange: (state) => (connection.state = state),
 			onReceivingChange: (state) => (connection.stream = state)
 		});
 
-		return () => controller.destroy();
+		return () => {
+			controller.destroy();
+			reset();
+		};
 	});
 </script>
 
@@ -56,6 +64,9 @@
 	{/if}
 </svelte:head>
 
+<!-- Width is 72vw, capped so the 16:9 frame plus its chrome still fits in 82vh, and
+     floored at 20rem. The p-3 gutter above 448px doubles as the resize handle ring,
+     which is why resizable.ts only enables dragging well above that breakpoint. -->
 <div
 	class="relative w-[72vw] max-w-[min(90vw,calc((82vh-4rem)*16/9))] min-w-80 p-0 transition-[--edge] duration-700 ease-cinema min-[448px]:p-3"
 	style:--edge={isLive ? 0.55 : 0.22}
@@ -66,10 +77,10 @@
 >
 	<!-- The status bar follows this surface's width without affecting its aspect ratio. -->
 	<div data-resize-surface class="relative cursor-default">
-		<div class="h-px w-full frame-edge" aria-hidden="true"></div>
+		<div class="h-px frame-edge" aria-hidden="true"></div>
 
 		<div
-			class="@container-size relative aspect-video bg-black ring-1 ring-theater-gold/10 ring-inset"
+			class="@container-size relative aspect-video bg-theater-black ring-1 ring-theater-gold/10 ring-inset"
 			bind:this={frameEl}
 		>
 			<!-- Keep demoSrc in SSR markup so the browser can fetch it before hydration. -->
@@ -82,7 +93,7 @@
 				autoplay
 				muted
 				playsinline
-				class="h-full w-full"
+				class="size-full"
 			>
 				Your browser does not support video playback.
 			</video>
@@ -90,7 +101,7 @@
 			<PlayerControls frame={frameEl} video={videoEl} enableReactions={enableFunFeatures} />
 		</div>
 
-		<div class="h-px w-full frame-edge" style:--edge-scale="0.66" aria-hidden="true"></div>
+		<div class="h-px frame-edge" style:--edge-scale="0.66" aria-hidden="true"></div>
 
 		<FrameBrackets />
 	</div>
