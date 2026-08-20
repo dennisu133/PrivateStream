@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from "svelte";
+	import { browser } from "$app/environment";
 	import { Volume, Volume1, Volume2, VolumeX } from "@lucide/svelte";
 	import Button from "./Button.svelte";
 	import { dispatchAutohide } from "$lib/attachments/autohide";
@@ -21,9 +21,6 @@
 	let isMuted = $state(true);
 	let lastNonZeroVolume = $state(DEFAULT_VOLUME);
 	let containerEl = $state<HTMLElement | null>(null);
-	// The server cannot know the stored volume, so the SSR markup would paint a 0 thumb
-	// and jump on hydrate. Hold the thumb until the stored value is in.
-	let restored = $state(false);
 
 	const volumePercent = $derived(Math.round(volume * 100));
 	const volumeText = $derived(isMuted ? "Muted" : `${volumePercent}%`);
@@ -145,16 +142,16 @@
 		}
 	};
 
-	onMount(() => {
-		restoreState();
-		restored = true;
-	});
+	// Synchronous on purpose: restoring during init means the hydrated paint already
+	// shows the stored volume, instead of flashing defaults until onMount runs.
+	if (browser) restoreState();
 </script>
 
 <svelte:window onkeydown={handleKeydown} onwheel={handleWheel} />
 
 <div
 	class="flex items-center gap-2.5"
+	data-restoring={browser ? undefined : ""}
 	bind:this={containerEl}
 	role="group"
 	aria-label="Volume controls"
@@ -173,7 +170,7 @@
 		<input
 			class="w-30"
 			style:--volume-fill="{volumePercent}%"
-			data-restoring={restored ? undefined : ""}
+			data-restoring={browser ? undefined : ""}
 			type="range"
 			min="0"
 			max="1"
@@ -218,6 +215,13 @@
 	   track's radius and renders as a pill. rounded-sm matches the Buttons. */
 	.volume-box:has(input:focus-visible) {
 		outline: 1px solid color-mix(in oklch, var(--color-theater-gold) 40%, transparent);
+	}
+
+	/* Before the stored value is in, the icon would show the default muted state, so it
+	   hides along with the thumb. :global because the svg is rendered by the icon
+	   component and carries no scope class. */
+	div[data-restoring] :global(svg) {
+		opacity: 0;
 	}
 
 	/* Before the stored value is in, volume is 0: the fill has no width and the track
