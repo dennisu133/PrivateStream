@@ -25,13 +25,27 @@ const ipResolver = createPublicIpResolver({
 	log: (message) => console.warn("[WHEP]", message)
 });
 
-export const POST: RequestHandler = async ({ request, locals }) => {
+/** Both handlers need an authenticated caller and a configured upstream. */
+function requireWhepAccess(locals: App.Locals): string {
 	if (!locals.user) {
 		throw error(401, "Unauthorized");
 	}
 	if (!SRS_WHEP_URL) {
 		throw error(500, "Missing SRS_WHEP_URL");
 	}
+	return SRS_WHEP_URL;
+}
+
+function forwardToSrs(target: URL, init: RequestInit) {
+	return fetch(target, { ...init, signal: AbortSignal.timeout(FORWARD_TIMEOUT_MS) }).catch((e) => {
+		// A timeout, a refused connection and a DNS failure all surface as the same 502.
+		console.error("[WHEP] Forward failed", init.method, target.pathname, e);
+		throw error(502, "Could not reach the SRS server");
+	});
+}
+
+export const POST: RequestHandler = async ({ request, locals }) => {
+	const srsWhepUrl = requireWhepAccess(locals);
 
 	const offerSdp = await request.text();
 	if (!offerSdp) {
@@ -48,17 +62,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		throw error(502, "Could not determine the server public IP");
 	}
 
-	const target = new URL(SRS_WHEP_URL);
+	const target = new URL(srsWhepUrl);
 	target.searchParams.set("eip", serverIp);
 
-	console.log("[WHEP] Proxy ->", target.toString());
-	const res = await fetch(target, {
+	const res = await forwardToSrs(target, {
 		method: "POST",
 		headers: { "Content-Type": "application/sdp" },
-		body: offerSdp,
-		signal: AbortSignal.timeout(FORWARD_TIMEOUT_MS)
-	}).catch(() => {
-		throw error(502, "Could not reach the SRS server");
+		body: offerSdp
 	});
 
 	if (!res.ok) {
@@ -72,40 +82,29 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	// Keep teardown on the authenticated proxy instead of exposing SRS.
 	const srsLocation = res.headers.get("location");
-	const sessionPath = srsLocation && toProxySessionPath(srsLocation, SRS_WHEP_URL);
+	const sessionPath = srsLocation && toProxySessionPath(srsLocation, srsWhepUrl);
 	if (sessionPath) {
 		headers.Location = sessionPath;
 	}
 
-	console.log("[WHEP] Proxy <- 200 answer", sessionPath ?? "(no session location)");
+	console.log("[WHEP] Session opened", sessionPath ?? "(no session location)", "eip", serverIp);
 	return new Response(answerSdp, { headers });
 };
 
 export const DELETE: RequestHandler = async ({ url, locals }) => {
-	if (!locals.user) {
-		throw error(401, "Unauthorized");
-	}
-	if (!SRS_WHEP_URL) {
-		throw error(500, "Missing SRS_WHEP_URL");
-	}
+	const srsWhepUrl = requireWhepAccess(locals);
 
 	const location = url.searchParams.get("loc");
 	if (!location) {
 		throw error(400, "Missing session location");
 	}
 
-	const target = toSrsSessionUrl(location, SRS_WHEP_URL);
+	const target = toSrsSessionUrl(location, srsWhepUrl);
 	if (!target) {
 		throw error(400, "Invalid session location");
 	}
 
-	console.log("[WHEP] Proxy -> DELETE", target.toString());
-	const res = await fetch(target, {
-		method: "DELETE",
-		signal: AbortSignal.timeout(FORWARD_TIMEOUT_MS)
-	}).catch(() => {
-		throw error(502, "Could not reach the SRS server");
-	});
+	const res = await forwardToSrs(target, { method: "DELETE" });
 
 	// An expired SRS session is already torn down, so treat 404 as success.
 	if (!res.ok && res.status !== 404) {
@@ -113,5 +112,6 @@ export const DELETE: RequestHandler = async ({ url, locals }) => {
 		throw error(502, "SRS refused to delete the session");
 	}
 
+	console.log("[WHEP] Session closed", location);
 	return new Response(null, { status: 204 });
 };
