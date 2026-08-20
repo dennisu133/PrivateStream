@@ -30,8 +30,13 @@ export function createFixedWindowRateLimiter({
 		return counter;
 	}
 
-	function retryAfterSeconds(resetAt: number, now: number): number {
-		return Math.max(1, Math.ceil((resetAt - now) / 1000));
+	function reject({ resetAt }: Counter, now: number): RateLimitResult {
+		return {
+			allowed: false,
+			// Never advertise 0: a client that retries that fast is just rejected again.
+			retryAfterSeconds: Math.max(1, Math.ceil((resetAt - now) / 1000)),
+			resetAt
+		};
 	}
 
 	function pruneExpired(now: number) {
@@ -51,21 +56,8 @@ export function createFixedWindowRateLimiter({
 			globalCounter = currentCounter(globalCounter, now);
 			const keyCounter = currentCounter(keyedCounters.get(key), now);
 
-			if (globalCounter.count >= globalLimit) {
-				return {
-					allowed: false,
-					retryAfterSeconds: retryAfterSeconds(globalCounter.resetAt, now),
-					resetAt: globalCounter.resetAt
-				};
-			}
-
-			if (keyCounter.count >= perKeyLimit) {
-				return {
-					allowed: false,
-					retryAfterSeconds: retryAfterSeconds(keyCounter.resetAt, now),
-					resetAt: keyCounter.resetAt
-				};
-			}
+			if (globalCounter.count >= globalLimit) return reject(globalCounter, now);
+			if (keyCounter.count >= perKeyLimit) return reject(keyCounter, now);
 
 			if (!keyedCounters.has(key) && keyedCounters.size >= maxKeys) {
 				pruneExpired(now);
