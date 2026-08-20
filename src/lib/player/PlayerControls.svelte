@@ -22,7 +22,7 @@
 	} = $props();
 
 	let menuOpen = $state(false);
-	let toggleButtonEl = $state<HTMLElement | null>(null);
+	let toggleButtonEl = $state<HTMLButtonElement | null>(null);
 	let activeReaction = $state<Reaction | null>(null);
 	let overlayTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -98,21 +98,20 @@
 {/if}
 
 <div
-	class="absolute right-3 bottom-3 flex items-center gap-3 rounded-sm border border-theater-gold/12 bg-black/55 px-3 py-2 backdrop-blur-md transition-[opacity,translate] duration-300 ease-cinema data-[visible=false]:pointer-events-none data-[visible=false]:translate-y-2 data-[visible=false]:opacity-0"
+	class="absolute right-3 bottom-3 flex items-center gap-3 rounded-sm border border-theater-border bg-theater-black/55 px-3 py-2 backdrop-blur-md transition-[opacity,translate] duration-300 ease-cinema data-[visible=false]:pointer-events-none data-[visible=false]:translate-y-2 data-[visible=false]:opacity-0"
 	{@attach autohide()}
 >
 	{#if enableReactions}
-		<span bind:this={toggleButtonEl}>
-			<Button
-				label="Reactions (r)"
-				title="Reactions (r)"
-				aria-haspopup="listbox"
-				aria-expanded={menuOpen}
-				onclick={toggleMenu}
-			>
-				<SmilePlus size={24} />
-			</Button>
-		</span>
+		<Button
+			bind:ref={toggleButtonEl}
+			label="Reactions (r)"
+			title="Reactions (r)"
+			aria-haspopup="listbox"
+			aria-expanded={menuOpen}
+			onclick={toggleMenu}
+		>
+			<SmilePlus size={24} />
+		</Button>
 	{/if}
 
 	<VolumeControls {video} disableGlobalInput={menuOpen} />

@@ -9,7 +9,7 @@
 		onSelect,
 		onClose
 	}: {
-		toggleButtonEl?: HTMLElement | null;
+		toggleButtonEl?: HTMLButtonElement | null;
 		onSelect: (reaction: Reaction) => void;
 		onClose: () => void;
 	} = $props();
@@ -27,7 +27,7 @@
 			// closing by clicking another control must not steal focus from it.
 			const active = document.activeElement;
 			if (active === opened || active === document.body) {
-				toggleButtonEl?.querySelector("button")?.focus();
+				toggleButtonEl?.focus();
 			}
 		};
 	});
@@ -103,7 +103,7 @@
 	role="listbox"
 	tabindex="0"
 	aria-activedescendant="reaction-option-{selectedIndex}"
-	class="theater-scrollbar grid min-h-0 grid-cols-3 gap-2 overflow-y-auto rounded-md border border-theater-gold/12 bg-black/85 p-3 outline-hidden backdrop-blur-sm"
+	class="theater-scrollbar grid min-h-0 grid-cols-3 gap-2 overflow-y-auto rounded-md border border-theater-border bg-theater-black/85 p-3 outline-hidden backdrop-blur-sm"
 	onkeydown={handleMenuKeydown}
 >
 	{#each reactions as r, i (r.id)}
@@ -114,7 +114,7 @@
 			tabindex="-1"
 			aria-selected={i === selectedIndex}
 			title={r.name}
-			class="flex cursor-pointer flex-col gap-1.5 rounded-sm border border-theater-gold/12 bg-theater-gold/5 p-2 leading-tight text-theater-paper hover:bg-theater-gold/10 aria-selected:bg-theater-gold/10 aria-selected:ring-2 aria-selected:ring-theater-gold/70"
+			class="flex cursor-pointer flex-col gap-1.5 rounded-sm border border-theater-border bg-theater-gold/5 p-2 leading-tight text-theater-paper hover:bg-theater-gold/10 aria-selected:bg-theater-gold/10 aria-selected:ring-2 aria-selected:ring-theater-gold/70"
 			onclick={() => handleSelect(r)}
 		>
 			<img
