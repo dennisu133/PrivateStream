@@ -107,6 +107,6 @@
 	</div>
 
 	<div class="cursor-default">
-		<StatusBar />
+		<StatusBar demo={Boolean(demoSrc)} />
 	</div>
 </div>

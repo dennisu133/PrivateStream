@@ -4,6 +4,9 @@
 
 	type Indicator = { state: IndicatorState; label: string };
 
+	// demo: a looping local file, so connection and stream state say nothing useful.
+	let { demo = false }: { demo?: boolean } = $props();
+
 	const connectionIndicators: Partial<Record<RTCPeerConnectionState, Indicator>> = {
 		connected: { state: "ok", label: "Connected" },
 		failed: { state: "warn", label: "Failed" },
@@ -41,19 +44,22 @@
 
 {#snippet indicator({ state, label }: Indicator)}
 	<span
-		class="inline-flex items-start gap-2.5 text-xs leading-none font-light tracking-widest uppercase"
+		class="inline-flex items-baseline gap-2.5 text-xs leading-none font-light tracking-widest uppercase"
 	>
-		<!-- Puts the LED's top edge on the first line's cap height: half-leading,
-		     (1lh - 1.333em) / 2, plus ascent - cap, 0.25em. Metrics in app.css. -->
+		<!-- No offset math: an empty box's baseline is its own bottom edge, and the cap
+		     height is 0.75em, so baseline alignment seats the LED on the cap band at any
+		     zoom. Offsets measured from the line box top cannot: the box snaps to device
+		     pixels, the glyphs do not. overflow-hidden keeps the baseline synthesized
+		     from the border box even while the spinner is inside. Metrics in app.css. -->
 		<span
-			class="mt-[calc((1lh-1.333em)/2+0.25em)] inline-flex size-[0.75em] shrink-0 items-center justify-center rounded-full {ledClasses[
+			class="relative inline-block size-[0.75em] shrink-0 overflow-hidden rounded-full {ledClasses[
 				state
 			]}"
 			aria-hidden="true"
 		>
 			{#if state === "pending"}
 				<span
-					class="size-1.5 animate-spin rounded-full border border-theater-gold/15 border-t-theater-gold"
+					class="absolute inset-0 m-auto size-1.5 animate-spin rounded-full border border-theater-gold/15 border-t-theater-gold"
 					aria-hidden="true"
 				></span>
 			{/if}
@@ -62,22 +68,20 @@
 	</span>
 {/snippet}
 
-<div class="mt-5 flex items-center gap-4 px-1" role="status">
-	{#if connection.stream === "offline"}
+<div class="mt-5 flex items-baseline gap-4 px-1" role="status">
+	{#if demo}
+		{@render indicator({ state: "ok", label: "Demo" })}
+	{:else if connection.stream === "offline"}
 		<!-- No connection indicator: there is nothing to connect to while offline. -->
 		{@render indicator(streamIndicator)}
 	{:else}
 		{@render indicator(connectionIndicator)}
 	{/if}
-	{#if connection.stream !== "offline" && connectionIndicator.state === "ok"}
-		<!-- Divider spans one cap height (0.75em). items-center would seat it at
-		     (1lh - 0.75em) / 2 = 0.125em, while the cap starts at 0.0833em, hence the
-		     0.042em lift. text-xs is not here for text: it is the font-size those em
-		     units resolve against. Metrics in app.css. -->
-		<span
-			class="h-[0.75em] w-px translate-y-[-0.042em] bg-theater-border text-xs"
-			aria-hidden="true"
-		></span>
+	{#if !demo && connection.stream !== "offline" && connectionIndicator.state === "ok"}
+		<!-- Same baseline trick as the LED: an empty flex item's baseline is its bottom
+		     edge, so a 0.75em rule stands exactly on the cap band. text-xs is not here
+		     for text: it is the font-size that em resolves against. -->
+		<span class="h-[0.75em] w-px bg-theater-border text-xs" aria-hidden="true"></span>
 		{@render indicator(streamIndicator)}
 	{/if}
 </div>
