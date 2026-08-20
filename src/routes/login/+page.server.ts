@@ -7,7 +7,7 @@ import {
 	SESSION_COOKIE_NAME,
 	SESSION_COOKIE_OPTIONS
 } from "$lib/server/auth";
-import { LOGIN_ATTEMPT_LIMIT, loginRateLimiter } from "$lib/server/rate-limit";
+import { clientKey, LOGIN_ATTEMPT_LIMIT, loginRateLimiter } from "$lib/server/rate-limit";
 import type { Actions, PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -31,34 +31,21 @@ export const actions: Actions = {
 			return fail(400, { error: "Password is required." });
 		}
 
-		let clientAddress = "unknown";
-		try {
-			clientAddress = getClientAddress();
-		} catch {
-			// The global limit still protects bcrypt when no client address is available.
-		}
-
+		const clientAddress = clientKey(getClientAddress);
 		const rateLimit = loginRateLimiter.consume(clientAddress);
-		const rateLimitHeaders = {
+
+		setHeaders({
 			"RateLimit-Limit": LOGIN_ATTEMPT_LIMIT.toString(),
-			"RateLimit-Reset": Math.ceil(rateLimit.resetAt / 1000).toString()
-		};
+			"RateLimit-Reset": Math.ceil(rateLimit.resetAt / 1000).toString(),
+			"RateLimit-Remaining": rateLimit.allowed ? rateLimit.remaining.toString() : "0"
+		});
 
 		if (!rateLimit.allowed) {
-			setHeaders({
-				...rateLimitHeaders,
-				"RateLimit-Remaining": "0",
-				"Retry-After": rateLimit.retryAfterSeconds.toString()
-			});
+			setHeaders({ "Retry-After": rateLimit.retryAfterSeconds.toString() });
 			return fail(429, {
 				error: `Too many login attempts. Try again in ${rateLimit.retryAfterSeconds} seconds.`
 			});
 		}
-
-		setHeaders({
-			...rateLimitHeaders,
-			"RateLimit-Remaining": rateLimit.remaining.toString()
-		});
 
 		const passwordHash = Buffer.from(passwordHashBase64, "base64").toString();
 
@@ -72,7 +59,7 @@ export const actions: Actions = {
 
 		const sessionToken = createSessionToken();
 		if (!sessionToken) {
-			return fail(500, { error: "Server configuration error." });
+			return fail(500, { error: "Server authentication is not configured correctly." });
 		}
 
 		cookies.set(SESSION_COOKIE_NAME, sessionToken, SESSION_COOKIE_OPTIONS);

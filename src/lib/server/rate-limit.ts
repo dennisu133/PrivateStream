@@ -88,6 +88,16 @@ export function createFixedWindowRateLimiter({
 	};
 }
 
+/** getClientAddress throws when the adapter cannot resolve one, and the global limit
+    still applies to everyone who lands on the shared fallback key. */
+export function clientKey(getClientAddress: () => string): string {
+	try {
+		return getClientAddress();
+	} catch {
+		return "unknown";
+	}
+}
+
 export const LOGIN_ATTEMPT_LIMIT = 5;
 
 export const loginRateLimiter = createFixedWindowRateLimiter({

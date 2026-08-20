@@ -1,6 +1,6 @@
 import { error, json } from "@sveltejs/kit";
 import { env } from "$env/dynamic/private";
-import { createFixedWindowRateLimiter } from "$lib/server/rate-limit";
+import { clientKey, createFixedWindowRateLimiter } from "$lib/server/rate-limit";
 import { reactions } from "$lib/player/reactions/reactions";
 import type { RequestHandler } from "./$types";
 
@@ -85,14 +85,7 @@ export const GET: RequestHandler = ({ locals }) => {
 export const POST: RequestHandler = async ({ locals, request, getClientAddress, setHeaders }) => {
 	requireReactionAccess(locals);
 
-	let clientAddress = "unknown";
-	try {
-		clientAddress = getClientAddress();
-	} catch {
-		// The global limit still applies when no client address is available.
-	}
-
-	const rateLimit = reactionRateLimiter.consume(clientAddress);
+	const rateLimit = reactionRateLimiter.consume(clientKey(getClientAddress));
 	if (!rateLimit.allowed) {
 		setHeaders({ "Retry-After": rateLimit.retryAfterSeconds.toString() });
 		throw error(429, "Too many reactions. Slow down a little.");

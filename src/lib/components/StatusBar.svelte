@@ -38,7 +38,7 @@
 
 {#snippet indicator({ state, label }: Indicator)}
 	<span
-		class="inline-flex items-start gap-2.5 font-mono text-xs leading-none font-light tracking-widest uppercase"
+		class="inline-flex items-start gap-2.5 text-xs leading-none font-light tracking-widest uppercase"
 	>
 		<!-- Puts the LED's top edge on the first line's cap height: half-leading,
 		     (1lh - 1.333em) / 2, plus ascent - cap, 0.25em. Metrics in app.css. -->

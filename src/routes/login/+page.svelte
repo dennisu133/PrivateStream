@@ -12,11 +12,11 @@
 	     the shake and slip animations on a repeat failure. -->
 	{#key form}
 		<div class="relative w-full max-w-xs" style:--edge="0.42" class:ticket-shake={!!form?.error}>
-			<div class="h-px w-full frame-edge" aria-hidden="true"></div>
+			<div class="h-px frame-edge" aria-hidden="true"></div>
 
 			<div class="px-8 py-9">
 				<h1
-					class="mb-8 text-center font-display text-2xl leading-none tracking-[0.12em] text-theater-paper"
+					class="mb-8 text-center font-display text-2xl leading-none tracking-widest text-theater-paper"
 				>
 					{publicTitle}
 				</h1>
@@ -32,21 +32,21 @@
 						autocomplete="current-password"
 						required
 						autofocus
-						class="w-full rounded-sm border bg-theater-dark/70 px-4 py-3 text-center font-mono text-sm tracking-wider text-theater-paper transition-colors duration-200 placeholder:tracking-normal placeholder:text-theater-muted/50 focus:border-theater-gold/45 focus:outline-none {form?.error
+						class="w-full rounded-sm border bg-theater-dark/70 px-4 py-3 text-center text-sm tracking-wider text-theater-paper transition-colors duration-200 placeholder:tracking-normal placeholder:text-theater-muted/50 focus:border-theater-gold/45 focus:outline-hidden {form?.error
 							? 'border-red-500/30'
 							: 'border-theater-border'}"
 					/>
 
 					<button
 						type="submit"
-						class="cursor-pointer rounded-sm border border-theater-gold/20 bg-theater-gold/8 px-4 py-3 font-mono text-xs font-medium tracking-[0.15em] text-theater-gold uppercase transition-colors duration-300 hover:border-theater-gold/40 hover:bg-theater-gold/12"
+						class="cursor-pointer rounded-sm border border-theater-gold/20 bg-theater-gold/8 px-4 py-3 text-xs font-medium tracking-widest text-theater-gold uppercase transition-colors duration-300 hover:border-theater-gold/40 hover:bg-theater-gold/12"
 					>
 						Enter
 					</button>
 				</form>
 			</div>
 
-			<div class="h-px w-full frame-edge" style:--edge-scale="0.66" aria-hidden="true"></div>
+			<div class="h-px frame-edge" style:--edge-scale="0.66" aria-hidden="true"></div>
 
 			<FrameBrackets size={16} />
 
@@ -54,7 +54,7 @@
 			<div class="absolute inset-x-0 top-full mt-5 flex justify-center" role="alert">
 				{#if form?.error}
 					<p
-						class="error-slip text-center font-mono text-xs leading-relaxed font-light tracking-widest text-red-400/90 uppercase"
+						class="error-slip text-center text-xs leading-relaxed font-light tracking-widest text-red-400/90 uppercase"
 					>
 						{form.error}
 					</p>
@@ -66,7 +66,7 @@
 	<!-- Leave room for the absolute error message. -->
 	<a
 		href="/demo"
-		class="mt-20 font-mono text-[11px] tracking-[0.2em] text-theater-muted/60 uppercase transition-colors duration-300 hover:text-theater-gold/70"
+		class="mt-20 text-xs tracking-widest text-theater-muted/60 uppercase transition-colors duration-300 hover:text-theater-gold/70"
 	>
 		View demo
 	</a>
