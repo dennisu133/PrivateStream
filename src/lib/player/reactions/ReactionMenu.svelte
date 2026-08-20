@@ -46,16 +46,19 @@
 		menuEl?.children[selectedIndex]?.scrollIntoView({ block: "nearest" });
 	});
 
-	function handleSelect(reaction: Reaction) {
+	function handleSelect(reaction: Reaction | undefined) {
+		if (!reaction) return;
 		onSelect(reaction);
 		triggerReaction(reaction.id).catch((e) => console.error("Failed to trigger reaction:", e));
 	}
 
 	function step(delta: number) {
+		if (!reactions.length) return;
 		selectedIndex = (selectedIndex + delta + reactions.length) % reactions.length;
 	}
 
 	function handleArrowKey(key: string) {
+		if (!reactions.length) return false;
 		if (key === "ArrowLeft") step(-1);
 		else if (key === "ArrowRight") step(1);
 		else if (key === "ArrowUp") selectedIndex = Math.max(0, selectedIndex - COLUMNS);

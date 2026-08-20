@@ -13,7 +13,8 @@
 	const streamIndicators: Record<ReceivingState, Indicator> = {
 		pending: { state: "pending", label: "Checking..." },
 		live: { state: "ok", label: "Live" },
-		idle: { state: "warn", label: "No Stream" }
+		idle: { state: "warn", label: "No Stream" },
+		offline: { state: "off", label: "Stream Offline" }
 	};
 
 	// Exactly one colour class per element. Stacking a base colour with a state
@@ -22,12 +23,14 @@
 		// text-* here is not for text: currentColor feeds the status-pulse box-shadow.
 		ok: "status-live bg-emerald-400 text-emerald-400",
 		warn: "bg-red-400",
-		pending: "border border-theater-gold/25 bg-transparent"
+		pending: "border border-theater-gold/25 bg-transparent",
+		off: "border border-theater-gold/25 bg-transparent"
 	};
 	const labelClasses: Record<IndicatorState, string> = {
 		ok: "text-emerald-400/85",
 		warn: "text-red-400/85",
-		pending: "text-theater-muted"
+		pending: "text-theater-muted",
+		off: "text-theater-muted"
 	};
 
 	const connectionIndicator: Indicator = $derived(
@@ -60,8 +63,13 @@
 {/snippet}
 
 <div class="mt-5 flex items-center gap-4 px-1" role="status">
-	{@render indicator(connectionIndicator)}
-	{#if connectionIndicator.state === "ok"}
+	{#if connection.stream === "offline"}
+		<!-- No connection indicator: there is nothing to connect to while offline. -->
+		{@render indicator(streamIndicator)}
+	{:else}
+		{@render indicator(connectionIndicator)}
+	{/if}
+	{#if connection.stream !== "offline" && connectionIndicator.state === "ok"}
 		<!-- Divider spans one cap height (0.75em). items-center would seat it at
 		     (1lh - 0.75em) / 2 = 0.125em, while the cap starts at 0.0833em, hence the
 		     0.042em lift. text-xs is not here for text: it is the font-size those em

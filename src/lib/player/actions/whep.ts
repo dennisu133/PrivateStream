@@ -6,6 +6,9 @@ type WhepOptions = {
 };
 
 const ENDPOINT = "/api/whep";
+const STATUS_ENDPOINT = "/api/stream";
+// While the broadcaster is offline, poll the cheap status endpoint instead of negotiating.
+const LIVE_POLL_MS = 3000;
 const RECONNECT_DELAY_MS = 1500;
 const MAX_RECONNECT_DELAY_MS = 30_000;
 const WATCHDOG_INTERVAL_MS = 2000;
@@ -99,10 +102,38 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}) {
 		console.log("[WHEP] Connection negotiation successful");
 	};
 
+	const isStreamLive = async () => {
+		const res = await fetch(STATUS_ENDPOINT, { signal: AbortSignal.timeout(8000) });
+		if (!res.ok) throw new Error(`Status HTTP ${res.status}`);
+		const data = (await res.json()) as { live?: boolean };
+		return Boolean(data.live);
+	};
+
 	const connect = async () => {
 		if (stopped) return;
 		clearReconnect();
 		deleteSession();
+
+		let live: boolean;
+		try {
+			live = await isStreamLive();
+		} catch (e) {
+			console.warn("[WHEP] Live status check failed", e);
+			currentReconnectDelayMs = Math.min(MAX_RECONNECT_DELAY_MS, currentReconnectDelayMs * 2);
+			scheduleReconnect();
+			return;
+		}
+		if (stopped) return;
+		if (!live) {
+			// Release any previous peer; there is nothing to receive while offline.
+			closeConnection();
+			// pc.close() fires no state event, so reset the indicator state explicitly.
+			opts.onStateChange?.("new");
+			setReceiving("offline");
+			scheduleReconnect(LIVE_POLL_MS);
+			return;
+		}
+
 		last = { bytes: 0, updatedAt: 0 };
 		setReceiving("pending");
 		try {

@@ -51,6 +51,8 @@ docker run --rm -it \
 
 This container stops when you close the terminal. Open `http://SRS_HOST:8080` to confirm that SRS is running.
 
+PrivateStream detects whether the stream is live by polling the SRS HTTP API (a cached JSON request, no WebRTC session), so viewers only open WHEP sessions while the broadcaster is publishing.
+
 SRS needs to advertise an address that viewers can reach. Set `SERVER_PUBLIC_IP` when that address is known. If you omit it, PrivateStream uses public IP lookup services, caches the result for 60 seconds, and reuses the last known address if a later lookup fails. You can override the services with `IP_LOOKUP_URLS`.
 
 Viewers need access to SRS on port 8000. OBS and PrivateStream need access to port 1985.
