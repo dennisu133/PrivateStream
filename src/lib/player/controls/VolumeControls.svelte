@@ -21,30 +21,34 @@
 	let isMuted = $state(true);
 	let lastNonZeroVolume = $state(DEFAULT_VOLUME);
 	let containerEl = $state<HTMLElement | null>(null);
+	// The server cannot know the stored volume, so the SSR markup would paint a 0 thumb
+	// and jump on hydrate. Hold the thumb until the stored value is in.
+	let restored = $state(false);
 
 	const volumePercent = $derived(Math.round(volume * 100));
 	const volumeText = $derived(isMuted ? "Muted" : `${volumePercent}%`);
+	const VolumeIcon = $derived(
+		isMuted ? VolumeX : volume < 0.33 ? Volume : volume < 0.66 ? Volume1 : Volume2
+	);
 
 	const dispatchShow = () => dispatchAutohide(containerEl, "autohide:show");
 
 	const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
-	const applyVideoState = () => {
+	// Also runs when the video element itself arrives, so a restored volume is not lost.
+	$effect(() => {
 		if (!video) return;
 		video.volume = volume;
 		video.muted = isMuted;
-	};
+	});
 
+	// isMuted is deliberately not persisted: browsers only allow a programmatic unmute
+	// with user activation, so an honoured preference would be refused and re-muted.
 	const persistState = () => {
-		if (typeof window === "undefined") return;
 		try {
 			window.localStorage.setItem(
 				STORAGE_KEY,
-				JSON.stringify({
-					volume,
-					isMuted,
-					lastVolume: lastNonZeroVolume
-				})
+				JSON.stringify({ volume, lastVolume: lastNonZeroVolume })
 			);
 		} catch (error) {
 			console.warn("Failed to persist player volume", error);
@@ -59,25 +63,19 @@
 			isMuted = true;
 		} else {
 			lastNonZeroVolume = clamped;
-			if (isMuted) isMuted = false;
-			if (wasMuted) {
-				try {
-					video?.play?.();
-				} catch {}
-			}
+			isMuted = false;
+			// A muted autoplay start stays paused in some browsers until asked directly.
+			if (wasMuted) void video?.play().catch(() => {});
 		}
-		applyVideoState();
 		persistState();
 	};
 
 	const toggleMute = () => {
 		if (isMuted) {
-			const restored = lastNonZeroVolume > 0 ? lastNonZeroVolume : DEFAULT_VOLUME;
-			setVolumeNormalized(restored);
+			setVolumeNormalized(lastNonZeroVolume || DEFAULT_VOLUME);
 		} else {
 			if (volume > 0) lastNonZeroVolume = volume;
 			isMuted = true;
-			applyVideoState();
 			persistState();
 		}
 		dispatchShow();
@@ -88,14 +86,9 @@
 		dispatchShow();
 	};
 
-	const handleInput = (event: Event) => {
-		const target = event.currentTarget as HTMLInputElement | null;
-		if (!target) return;
-		const next = parseFloat(target.value);
-		if (!Number.isNaN(next)) {
-			setVolumeNormalized(next);
-			dispatchShow();
-		}
+	const handleInput = (event: Event & { currentTarget: HTMLInputElement }) => {
+		setVolumeNormalized(event.currentTarget.valueAsNumber);
+		dispatchShow();
 	};
 
 	const handleWheel = (event: WheelEvent) => {
@@ -133,15 +126,10 @@
 	};
 
 	const restoreState = () => {
-		if (typeof window === "undefined") return;
 		try {
 			const raw = window.localStorage.getItem(STORAGE_KEY);
 			if (!raw) return;
-			const saved = JSON.parse(raw) as {
-				volume?: number;
-				isMuted?: boolean;
-				lastVolume?: number;
-			};
+			const saved = JSON.parse(raw) as { volume?: number; lastVolume?: number };
 			if (typeof saved.volume === "number") {
 				volume = clamp01(saved.volume);
 			}
@@ -152,8 +140,6 @@
 			} else {
 				lastNonZeroVolume = DEFAULT_VOLUME;
 			}
-			// Start muted so autoplay is allowed.
-			isMuted = true;
 		} catch (error) {
 			console.warn("Failed to restore player volume", error);
 		}
@@ -161,7 +147,7 @@
 
 	onMount(() => {
 		restoreState();
-		applyVideoState();
+		restored = true;
 	});
 </script>
 
@@ -178,15 +164,7 @@
 		title={(isMuted ? "Unmute" : "Mute") + " (m)"}
 		onclick={toggleMute}
 	>
-		{#if isMuted}
-			<VolumeX size={24} strokeWidth={2} aria-hidden="true" />
-		{:else if volume < 0.33}
-			<Volume size={24} strokeWidth={2} aria-hidden="true" />
-		{:else if volume < 0.66}
-			<Volume1 size={24} strokeWidth={2} aria-hidden="true" />
-		{:else}
-			<Volume2 size={24} strokeWidth={2} aria-hidden="true" />
-		{/if}
+		<VolumeIcon size={24} aria-hidden="true" />
 	</Button>
 
 	<!-- h-8 matches the adjacent Button, so the focus ring is the same box. The
@@ -194,6 +172,8 @@
 	<span class="volume-box -mx-1.5 inline-flex h-8 items-center rounded-sm px-1.5">
 		<input
 			class="w-30"
+			style:--volume-fill="{volumePercent}%"
+			data-restoring={restored ? undefined : ""}
 			type="range"
 			min="0"
 			max="1"
@@ -202,9 +182,6 @@
 			oninput={handleInput}
 			title="Adjust volume (↑/↓/scroll)"
 			aria-label="Volume"
-			aria-valuemin={0}
-			aria-valuemax={100}
-			aria-valuenow={volumePercent}
 			aria-valuetext={volumeText}
 		/>
 	</span>
@@ -212,10 +189,20 @@
 
 <style>
 	input[type="range"] {
+		--track-fill: var(--color-theater-gold-dim);
+		--track-empty: color-mix(in oklch, var(--color-theater-gold) 14%, transparent);
+		/* Filled up to the thumb, dim past it, and hover brightens both halves. The
+		   gradient is defined once so both engines paint from the same value. */
+		--track: linear-gradient(
+			to right,
+			var(--track-fill) var(--volume-fill, 0%),
+			var(--track-empty) var(--volume-fill, 0%)
+		);
+
 		-webkit-appearance: none;
 		appearance: none;
 		height: 3px;
-		background: color-mix(in oklch, var(--color-theater-gold) 14%, transparent);
+		background: var(--track);
 		border-radius: 2px;
 		outline: none;
 		cursor: pointer;
@@ -223,13 +210,27 @@
 	}
 
 	input[type="range"]:hover {
-		background: color-mix(in oklch, var(--color-theater-gold) 30%, transparent);
+		--track-fill: var(--color-theater-gold);
+		--track-empty: color-mix(in oklch, var(--color-theater-gold) 30%, transparent);
 	}
 
 	/* The ring lives on the wrapper: an outline on the 3px input inherits the
 	   track's radius and renders as a pill. rounded-sm matches the Buttons. */
 	.volume-box:has(input:focus-visible) {
 		outline: 1px solid color-mix(in oklch, var(--color-theater-gold) 40%, transparent);
+	}
+
+	/* Before the stored value is in, volume is 0: the fill has no width and the track
+	   reads as a neutral placeholder. The thumb would sit at 0 and visibly jump, so it
+	   waits and arrives with the fill. */
+	input[data-restoring]::-webkit-slider-thumb {
+		opacity: 0;
+	}
+
+	/* Separate rule on purpose: an unknown selector in a group drops the whole rule,
+	   and each engine only knows its own thumb pseudo-element. */
+	input[data-restoring]::-moz-range-thumb {
+		opacity: 0;
 	}
 
 	input[type="range"]::-webkit-slider-thumb {
@@ -267,12 +268,8 @@
 
 	input[type="range"]::-moz-range-track {
 		height: 3px;
-		background: color-mix(in oklch, var(--color-theater-gold) 14%, transparent);
+		background: var(--track);
 		border-radius: 2px;
 		transition: background 0.2s ease;
-	}
-
-	input[type="range"]:hover::-moz-range-track {
-		background: color-mix(in oklch, var(--color-theater-gold) 30%, transparent);
 	}
 </style>
