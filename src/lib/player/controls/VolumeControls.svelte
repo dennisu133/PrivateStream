@@ -32,6 +32,11 @@
 
 	const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
+	// Browsers refuse a programmatic unmute until the document has been activated, and
+	// Firefox pauses the element when one is attempted. Wheel events never activate a
+	// document, so scrolling before any click or keypress lands exactly there.
+	const canUnmute = () => navigator.userActivation?.hasBeenActive ?? true;
+
 	// Also runs when the video element itself arrives, so a restored volume is not lost.
 	$effect(() => {
 		if (!video) return;
@@ -60,9 +65,13 @@
 			isMuted = true;
 		} else {
 			lastNonZeroVolume = clamped;
-			isMuted = false;
-			// A muted autoplay start stays paused in some browsers until asked directly.
-			if (wasMuted) void video?.play().catch(() => {});
+			// Without activation the level is kept but the video stays muted, so the next
+			// click or keypress unmutes it instead of the browser pausing playback now.
+			if (canUnmute()) {
+				isMuted = false;
+				// A muted autoplay start stays paused in some browsers until asked directly.
+				if (wasMuted) void video?.play().catch(() => {});
+			}
 		}
 		persistState();
 	};
