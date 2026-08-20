@@ -26,17 +26,16 @@ function isSessionPayload(value: unknown, nowSeconds: number): value is SessionP
 
 	const payload = value as Partial<SessionPayload>;
 	if (payload.v !== SESSION_VERSION) return false;
-	if (!Number.isInteger(payload.iat) || !Number.isInteger(payload.exp)) return false;
+	if (typeof payload.iat !== "number" || !Number.isInteger(payload.iat)) return false;
+	if (typeof payload.exp !== "number" || !Number.isInteger(payload.exp)) return false;
 	if (typeof payload.nonce !== "string" || !/^[A-Za-z0-9_-]{16,128}$/.test(payload.nonce)) {
 		return false;
 	}
 
-	const issuedAt = payload.iat as number;
-	const expiresAt = payload.exp as number;
-
-	if (issuedAt > nowSeconds + MAX_CLOCK_SKEW_SECONDS) return false;
-	if (expiresAt <= nowSeconds) return false;
-	if (expiresAt <= issuedAt || expiresAt - issuedAt > SESSION_TTL_SECONDS) return false;
+	if (payload.iat > nowSeconds + MAX_CLOCK_SKEW_SECONDS) return false;
+	if (payload.exp <= nowSeconds) return false;
+	// A shortened TTL must invalidate tokens minted under the old, longer one.
+	if (payload.exp <= payload.iat || payload.exp - payload.iat > SESSION_TTL_SECONDS) return false;
 
 	return true;
 }
