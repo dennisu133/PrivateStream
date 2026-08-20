@@ -4,10 +4,6 @@ export type Reaction = {
 	url: string;
 };
 
-export type ReactionEvent = Reaction & {
-	timestamp: number;
-};
-
 const reactionModules = import.meta.glob<{ default: string }>(
 	"$lib/assets/reactions/*.{png,jpg,jpeg,gif,webp,svg}",
 	{ eager: true }
@@ -31,7 +27,7 @@ export async function triggerReaction(id: string): Promise<void> {
 	}
 }
 
-type ReactionListener = (event: ReactionEvent) => void;
+type ReactionListener = (reaction: Reaction) => void;
 
 const reactionMap = new Map(reactions.map((r) => [r.id, r]));
 
@@ -39,46 +35,38 @@ const listeners = new Set<ReactionListener>();
 let eventSource: EventSource | null = null;
 
 function connect() {
-	if (typeof window === "undefined" || eventSource !== null || listeners.size === 0) {
-		return;
-	}
+	const source = new EventSource("/api/reactions");
 
-	eventSource = new EventSource("/api/reactions", { withCredentials: true });
-
-	eventSource.addEventListener("reaction", (e) => {
+	source.addEventListener("reaction", (e) => {
+		let id: string;
 		try {
-			const data = JSON.parse(e.data) as { id: string; timestamp: number };
-			const reaction = reactionMap.get(data.id);
-			if (reaction) {
-				const event: ReactionEvent = { ...reaction, timestamp: data.timestamp };
-				for (const listener of listeners) {
-					listener(event);
-				}
-			}
+			id = JSON.parse(e.data).id;
 		} catch {
-			// Ignore malformed events
+			return; // Malformed event.
+		}
+
+		const reaction = reactionMap.get(id);
+		if (!reaction) return;
+
+		for (const listener of listeners) {
+			listener(reaction);
 		}
 	});
-}
 
-function disconnect() {
-	eventSource?.close();
-	eventSource = null;
+	return source;
 }
 
 /** Shares one EventSource across subscribers and closes it after the last unsubscribe. */
 export function subscribeToReactions(listener: ReactionListener): () => void {
 	listeners.add(listener);
-
-	if (listeners.size === 1) {
-		connect();
-	}
+	if (typeof window !== "undefined") eventSource ??= connect();
 
 	return () => {
 		listeners.delete(listener);
 
 		if (listeners.size === 0) {
-			disconnect();
+			eventSource?.close();
+			eventSource = null;
 		}
 	};
 }

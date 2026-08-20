@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { fade } from "svelte/transition";
-	import type { Reaction } from "./reactions.svelte";
+	import type { Reaction } from "./reactions";
 
 	let { reaction }: { reaction: Reaction | null } = $props();
 </script>
 
-<!-- Key by id, not object: the server echoes reactions back to their sender as a fresh
-     object. |global because the key block, not the if, is what tears down on a swap. -->
+<!-- The key restarts the fade when the emote changes; |global because the key block,
+     not the if, is what tears down on a swap, and a local transition ignores parents. -->
 {#key reaction?.id}
 	{#if reaction}
 		<!-- Offsets and size resolve against the video frame (@container-size in Player.svelte). -->

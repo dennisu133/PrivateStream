@@ -7,7 +7,7 @@
 	import VolumeControls from "./controls/VolumeControls.svelte";
 	import ReactionMenu from "./reactions/ReactionMenu.svelte";
 	import ReactionOverlay from "./reactions/ReactionOverlay.svelte";
-	import { reactions, subscribeToReactions, type Reaction } from "./reactions/reactions.svelte";
+	import { reactions, subscribeToReactions, type Reaction } from "./reactions/reactions";
 
 	const OVERLAY_DURATION = 1500;
 

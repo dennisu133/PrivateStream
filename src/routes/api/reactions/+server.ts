@@ -1,6 +1,7 @@
 import { error, json } from "@sveltejs/kit";
 import { env } from "$env/dynamic/private";
 import { createFixedWindowRateLimiter } from "$lib/server/rate-limit";
+import { reactions } from "$lib/player/reactions/reactions";
 import type { RequestHandler } from "./$types";
 
 // Allow bursts without letting one viewer dominate the overlay.
@@ -10,21 +11,29 @@ const reactionRateLimiter = createFixedWindowRateLimiter({
 	globalLimit: 120
 });
 
+const validReactionIds = new Set(reactions.map((r) => r.id));
+
+const encoder = new TextEncoder();
 const streams = new Set<ReadableStreamDefaultController>();
 const KEEPALIVE_INTERVAL = 15_000;
 let keepAliveTimer: ReturnType<typeof setInterval> | null = null;
 
-function startKeepAlive() {
-	if (keepAliveTimer) return;
-	keepAliveTimer = setInterval(() => {
-		const ping = new TextEncoder().encode(": keepalive\n\n");
-		for (const controller of streams) {
-			try {
-				controller.enqueue(ping);
-			} catch {
-				streams.delete(controller);
-			}
+/** Enqueueing on a stream the client has dropped throws, which is how they get pruned. */
+function send(frame: string) {
+	const bytes = encoder.encode(frame);
+	for (const controller of streams) {
+		try {
+			controller.enqueue(bytes);
+		} catch {
+			streams.delete(controller);
 		}
+	}
+}
+
+function startKeepAlive() {
+	// Proxies drop idle connections, so a comment frame holds them open.
+	keepAliveTimer ??= setInterval(() => {
+		send(": keepalive\n\n");
 		if (streams.size === 0) stopKeepAlive();
 	}, KEEPALIVE_INTERVAL);
 }
@@ -36,27 +45,7 @@ function stopKeepAlive() {
 	}
 }
 
-function broadcast(event: string, data: string) {
-	const message = new TextEncoder().encode(`event: ${event}\ndata: ${data}\n\n`);
-	for (const controller of streams) {
-		try {
-			controller.enqueue(message);
-		} catch {
-			streams.delete(controller);
-		}
-	}
-}
-
-const reactionModules = import.meta.glob<{ default: string }>(
-	"$lib/assets/reactions/*.{png,jpg,jpeg,gif,webp,svg}",
-	{ eager: true }
-);
-
-const validReactionIds = new Set(
-	Object.keys(reactionModules).map((path) => path.split("/").pop()!)
-);
-
-export const GET: RequestHandler = ({ locals }) => {
+function requireReactionAccess(locals: App.Locals) {
 	if (env.REACTIONS === "false") {
 		throw error(404, "Reactions are disabled");
 	}
@@ -64,6 +53,10 @@ export const GET: RequestHandler = ({ locals }) => {
 	if (!locals.user) {
 		throw error(401, "Unauthorized");
 	}
+}
+
+export const GET: RequestHandler = ({ locals }) => {
+	requireReactionAccess(locals);
 
 	let streamController: ReadableStreamDefaultController;
 
@@ -72,7 +65,7 @@ export const GET: RequestHandler = ({ locals }) => {
 			streamController = controller;
 			streams.add(controller);
 			startKeepAlive();
-			controller.enqueue(new TextEncoder().encode(": connected\n\n"));
+			controller.enqueue(encoder.encode(": connected\n\n"));
 		},
 		cancel() {
 			streams.delete(streamController);
@@ -84,20 +77,13 @@ export const GET: RequestHandler = ({ locals }) => {
 		headers: {
 			"Content-Type": "text/event-stream",
 			"Cache-Control": "no-cache, no-store, must-revalidate",
-			Connection: "keep-alive",
 			"X-Accel-Buffering": "no"
 		}
 	});
 };
 
 export const POST: RequestHandler = async ({ locals, request, getClientAddress, setHeaders }) => {
-	if (env.REACTIONS === "false") {
-		throw error(404, "Reactions are disabled");
-	}
-
-	if (!locals.user) {
-		throw error(401, "Unauthorized");
-	}
+	requireReactionAccess(locals);
 
 	let clientAddress = "unknown";
 	try {
@@ -121,7 +107,7 @@ export const POST: RequestHandler = async ({ locals, request, getClientAddress, 
 		throw error(400, "Unknown reaction id");
 	}
 
-	broadcast("reaction", JSON.stringify({ id: body.id, timestamp: Date.now() }));
+	send(`event: reaction\ndata: ${JSON.stringify({ id: body.id })}\n\n`);
 
 	return json({ success: true });
 };

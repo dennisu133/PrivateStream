@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { reactions, triggerReaction, type Reaction } from "./reactions.svelte";
+	import { reactions, triggerReaction, type Reaction } from "./reactions";
 
 	/** Matches grid-cols-3 below; drives Up/Down stepping. */
 	const COLUMNS = 3;
