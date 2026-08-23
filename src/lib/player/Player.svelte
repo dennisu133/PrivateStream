@@ -83,10 +83,13 @@
 			class="@container-size relative aspect-video bg-theater-black ring-1 ring-theater-gold/10 ring-inset"
 			bind:this={frameEl}
 		>
-			<!-- Keep demoSrc in SSR markup so the browser can fetch it before hydration. -->
+			<!-- Keep demoSrc in SSR markup so the browser can fetch it before hydration.
+			     tabindex="-1" because Firefox tabs to a controls-less video: every hotkey is
+			     bound on window, so the stop does nothing but sit in front of the controls. -->
 			<video
 				bind:this={videoEl}
 				aria-label="Video stream"
+				tabindex="-1"
 				poster={demoSrc ? undefined : poster}
 				src={demoSrc ?? undefined}
 				loop={Boolean(demoSrc)}
