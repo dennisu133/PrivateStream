@@ -3,10 +3,10 @@ import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 import tailwindcss from "@tailwindcss/vite";
 import { sveltekit } from "@sveltejs/kit/vite";
 import { fileURLToPath } from "node:url";
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig } from "vite";
 
 export default defineConfig(({ mode }) => {
-	const env = loadEnv(mode, process.cwd(), "");
+	const boring = mode === "boring";
 	const emptyComponent = fileURLToPath(
 		new URL("./src/lib/components/Empty.svelte", import.meta.url)
 	);
@@ -48,17 +48,15 @@ export default defineConfig(({ mode }) => {
 			alias: [
 				{
 					find: "virtual:catchip-widget",
-					replacement:
-						env.VITE_BORING === "true"
-							? emptyComponent
-							: fileURLToPath(new URL("./src/lib/components/Catchip.svelte", import.meta.url))
+					replacement: boring
+						? emptyComponent
+						: fileURLToPath(new URL("./src/lib/components/Catchip.svelte", import.meta.url))
 				},
 				{
 					find: "virtual:neko-widget",
-					replacement:
-						env.VITE_BORING === "true"
-							? emptyComponent
-							: fileURLToPath(new URL("./src/lib/components/Neko.svelte", import.meta.url))
+					replacement: boring
+						? emptyComponent
+						: fileURLToPath(new URL("./src/lib/components/Neko.svelte", import.meta.url))
 				}
 			]
 		},

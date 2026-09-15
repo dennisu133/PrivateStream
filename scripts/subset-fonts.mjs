@@ -5,7 +5,7 @@ import ts from "typescript";
 import { loadEnv } from "vite";
 import subsetFont from "subset-font";
 
-const env = loadEnv("production", process.cwd(), "VITE_");
+const env = loadEnv(process.argv[2] || "production", process.cwd(), "VITE_");
 const text = [];
 
 // Collect candidate text, including strings in conditional branches. Static

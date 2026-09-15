@@ -98,11 +98,8 @@ Open `http://127.0.0.1:5173`. The development server only listens on localhost. 
 | `SRS_WHEP_URL`                  | SRS playback endpoint                                                                                     |
 | `ORIGIN`                        | Public HTTPS origin, such as `https://stream.example.com`                                                 |
 | `SERVER_PUBLIC_IP`              | Address advertised to WebRTC viewers                                                                      |
-| `VITE_BORING=true`              | Uses the plain player as the home page and omits the custom widgets at build time                         |
 | `REACTIONS=false`               | Disables reactions and their API                                                                          |
-| `DANGEROUSLY_DISABLE_AUTH=true` | Disables the password gate for local testing only                                                         |
-
-Changing `VITE_BORING` requires a rebuild. Never use `DANGEROUSLY_DISABLE_AUTH` in production or commit your `.env` file.
+| `DANGEROUSLY_DISABLE_AUTH=true` | Disables the password gate                                                                                |
 
 ## Production
 
@@ -112,6 +109,8 @@ Build and start the Bun server:
 bun run build
 bun run --env-file=.env build/index.js
 ```
+
+Use `bun run build:boring` instead of `bun run build` to make the plain player the home page and omit the cat widgets.
 
 The server listens on port 3000 by default. Put it behind an HTTPS reverse proxy and set `ORIGIN` to the public URL. Production login cookies require HTTPS.
 
