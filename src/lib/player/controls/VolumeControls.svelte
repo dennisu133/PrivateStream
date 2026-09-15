@@ -195,8 +195,8 @@
 
 <style>
 	input[type="range"] {
-		--track-fill: var(--color-theater-gold-dim);
-		--track-empty: color-mix(in oklch, var(--color-theater-gold) 14%, transparent);
+		--track-fill: var(--color-accent-dim);
+		--track-empty: color-mix(in oklch, var(--color-accent) 14%, transparent);
 		/* Filled up to the thumb, dim past it, and hover brightens both halves. The
 		   gradient is defined once so both engines paint from the same value. */
 		--track: linear-gradient(
@@ -216,14 +216,14 @@
 	}
 
 	input[type="range"]:hover {
-		--track-fill: var(--color-theater-gold);
-		--track-empty: color-mix(in oklch, var(--color-theater-gold) 30%, transparent);
+		--track-fill: var(--color-accent);
+		--track-empty: color-mix(in oklch, var(--color-accent) 30%, transparent);
 	}
 
 	/* The ring lives on the wrapper: an outline on the 3px input inherits the
 	   track's radius and renders as a pill. rounded-sm matches the Buttons. */
 	.volume-box:has(input:focus-visible) {
-		outline: 1px solid color-mix(in oklch, var(--color-theater-gold) 40%, transparent);
+		outline: 1px solid color-mix(in oklch, var(--color-accent) 40%, transparent);
 	}
 
 	/* Before the stored value is in, the icon would show the default muted state, so it
@@ -253,7 +253,7 @@
 		height: 10px;
 		border-radius: 50%;
 		/* Keep the thumb opaque so the track does not show through. */
-		background: var(--color-theater-muted);
+		background: var(--color-muted);
 		cursor: pointer;
 		transition:
 			background 0.2s ease,
@@ -261,7 +261,7 @@
 	}
 
 	input[type="range"]:hover::-webkit-slider-thumb {
-		background: var(--color-theater-gold);
+		background: var(--color-accent);
 		transform: scale(1.2);
 	}
 
@@ -269,14 +269,14 @@
 		width: 10px;
 		height: 10px;
 		border-radius: 50%;
-		background: var(--color-theater-muted);
+		background: var(--color-muted);
 		cursor: pointer;
 		border: none;
 		transition: background 0.2s ease;
 	}
 
 	input[type="range"]:hover::-moz-range-thumb {
-		background: var(--color-theater-gold);
+		background: var(--color-accent);
 	}
 
 	input[type="range"]::-moz-range-track {

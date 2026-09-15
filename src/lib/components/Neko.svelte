@@ -635,7 +635,7 @@
 	type="button"
 	aria-label={chasing ? "Send Java the cat home" : "Let Java the cat follow the cursor"}
 	onclick={handleClick}
-	class="fixed top-0 left-0 z-9999 border-none bg-transparent p-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-theater-gold {caught
+	class="fixed top-0 left-0 z-9999 border-none bg-transparent p-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent {caught
 		? 'cursor-none'
 		: 'cursor-pointer'}"
 	style="transform: translate3d({renderX}px, {renderY}px, 0);"

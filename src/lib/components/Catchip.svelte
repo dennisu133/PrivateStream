@@ -20,7 +20,7 @@
 	<button
 		type="button"
 		onclick={handleGifClick}
-		class="fixed right-5 bottom-5 z-60 cursor-pointer bg-transparent transition-transform duration-300 ease-cinema hover:scale-110"
+		class="fixed right-5 bottom-5 z-60 cursor-pointer bg-transparent transition-transform duration-300 ease-out-expo hover:scale-110"
 	>
 		<img
 			fetchpriority="low"

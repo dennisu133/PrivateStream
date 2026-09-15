@@ -1,5 +1,5 @@
 <script lang="ts">
-	import "../app.css";
+	import "./layout.css";
 	import favicon from "$lib/assets/favicon.ico";
 	import fontBebasNeue from "$lib/assets/fonts/bebas-neue-400.woff2";
 	import fontGeistMono from "$lib/assets/fonts/geist-mono-300-500.woff2";
@@ -44,7 +44,7 @@
 </svelte:head>
 
 <div
-	class="relative isolate h-dvh w-screen overflow-hidden bg-theater-black"
+	class="relative isolate h-dvh w-screen overflow-hidden bg-background"
 	class:film-grain={!isBoring}
 >
 	{#if !isBoring}

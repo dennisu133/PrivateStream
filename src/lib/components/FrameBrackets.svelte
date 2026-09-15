@@ -1,5 +1,5 @@
 <!-- Four corner brackets, absolutely positioned: the caller must be a positioning
-     context. frame-bracket takes the frame opacity from an inherited --edge.
+     context. frame-bracket takes the frame opacity from an inherited --frame-opacity.
      The border-* classes have to stay written out literally, since Tailwind scans
      source text and would not see them if they were derived from the sides. -->
 

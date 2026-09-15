@@ -19,10 +19,10 @@
 	href="https://github.com/dennisu133/PrivateStream"
 	target="_blank"
 	rel="noopener"
-	class="fixed top-5 right-5 z-60 max-w-[calc(100vw-2.5rem)] rounded-sm border border-theater-border bg-theater-black/80 px-4 py-2.5 text-right text-xs tracking-wider backdrop-blur-sm"
+	class="fixed top-5 right-5 z-60 max-w-[calc(100vw-2.5rem)] rounded-sm border border-border bg-background/80 px-4 py-2.5 text-right text-xs tracking-wider backdrop-blur-sm"
 >
-	<span class="text-theater-muted">Want to host this yourself?</span>
-	<span class="block text-theater-gold-dim transition-colors hover:text-theater-gold">
+	<span class="text-muted">Want to host this yourself?</span>
+	<span class="block text-accent-dim transition-colors hover:text-accent">
 		github.com/<wbr />dennisu133/<wbr />PrivateStream <span aria-hidden="true">↗</span>
 	</span>
 </a>

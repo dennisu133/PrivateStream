@@ -19,35 +19,27 @@
 	--font-mono: "Geist Mono", monospace;
 	--font-sans: "Geist Mono", monospace;
 
-	--color-theater-black: oklch(0 0 0);
-	--color-theater-dark: oklch(0.12 0.008 70);
-	--color-theater-border: oklch(0.76 0.1 75 / 0.18);
-	--color-theater-muted: oklch(0.68 0.012 80); /* 7.3:1 contrast on black */
-	--color-theater-gold: oklch(0.76 0.1 75);
-	--color-theater-gold-dim: oklch(0.6 0.1 65);
-	--color-theater-paper: oklch(0.94 0.008 80);
+	--color-background: oklch(0 0 0);
+	--color-surface: oklch(0.12 0.008 70);
+	--color-border: oklch(0.76 0.1 75 / 0.18);
+	--color-muted: oklch(0.68 0.012 80); /* 7.3:1 contrast on black */
+	--color-accent: oklch(0.76 0.1 75);
+	--color-accent-dim: oklch(0.6 0.1 65);
+	--color-foreground: oklch(0.94 0.008 80);
 
-	--ease-cinema: cubic-bezier(0.16, 1, 0.3, 1);
+	--ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @layer base {
 	html {
 		color-scheme: dark;
-		@apply font-sans antialiased;
+		@apply antialiased;
 	}
 	body {
-		background: var(--color-theater-black);
-		color: var(--color-theater-paper);
+		background: var(--color-background);
+		color: var(--color-foreground);
 		overflow: hidden;
 	}
-}
-
-/* Frame glow opacity. Typing it as a number lets it interpolate (so the glow can
-   transition instead of snapping); inheriting lets one value drive a whole frame. */
-@property --edge {
-	syntax: "<number>";
-	inherits: true;
-	initial-value: 0.22;
 }
 
 /* Full-viewport noise overlay. Global so the root layout needs no <style> block,
@@ -65,12 +57,20 @@
 	}
 }
 
-/* The gold hairline above and below a frame. Both --edge and --edge-scale are read
-   per element, so a parent transitioning --edge fades every strip beneath it. */
+/* Frame glow opacity. Typing it as a number lets it interpolate (so the glow can
+   transition instead of snapping); inheriting lets one value drive a whole frame. */
+@property --frame-opacity {
+	syntax: "<number>";
+	inherits: true;
+	initial-value: 0.22;
+}
+
+/* The gold hairline above and below a frame. Both --frame-opacity and --edge-scale are read
+   per element, so a parent transitioning --frame-opacity fades every strip beneath it. */
 @utility frame-edge {
 	--edge-tint: color-mix(
 		in oklch,
-		var(--color-theater-gold) calc(var(--edge) * var(--edge-scale, 1) * 100%),
+		var(--color-accent) calc(var(--frame-opacity) * var(--edge-scale, 1) * 100%),
 		transparent
 	);
 	background: linear-gradient(
@@ -86,7 +86,7 @@
 @utility frame-bracket {
 	border-color: color-mix(
 		in oklch,
-		var(--color-theater-gold) calc(var(--edge) * 100%),
+		var(--color-accent) calc(var(--frame-opacity) * 100%),
 		transparent
 	);
 }

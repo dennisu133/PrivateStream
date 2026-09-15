@@ -68,8 +68,8 @@
      floored at 20rem. The p-3 gutter above 448px doubles as the resize handle ring,
      which is why resizable.ts only enables dragging well above that breakpoint. -->
 <div
-	class="relative w-[72vw] max-w-[min(90vw,calc((82vh-4rem)*16/9))] min-w-80 p-0 transition-[--edge] duration-700 ease-cinema min-[448px]:p-3"
-	style:--edge={isLive ? 0.55 : 0.22}
+	class="relative w-[72vw] max-w-[min(90vw,calc((82vh-4rem)*16/9))] min-w-80 p-0 transition-[--frame-opacity] duration-700 ease-out-expo min-[448px]:p-3"
+	style:--frame-opacity={isLive ? 0.55 : 0.22}
 	role="region"
 	aria-label="Live stream player"
 	aria-busy={!isLive}
@@ -80,7 +80,7 @@
 		<div class="h-px frame-edge" aria-hidden="true"></div>
 
 		<div
-			class="@container-size relative aspect-video bg-theater-black ring-1 ring-theater-gold/10 ring-inset"
+			class="@container-size relative aspect-video bg-background ring-1 ring-accent/10 ring-inset"
 			bind:this={frameEl}
 		>
 			<!-- Keep demoSrc in SSR markup so the browser can fetch it before hydration.

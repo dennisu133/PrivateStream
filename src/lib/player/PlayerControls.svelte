@@ -87,7 +87,7 @@
 {/if}
 
 <div
-	class="absolute right-3 bottom-3 flex items-center gap-3 rounded-sm border border-theater-border bg-theater-black/55 px-3 py-2 backdrop-blur-md transition-[opacity,translate] duration-300 ease-cinema data-[visible=false]:pointer-events-none data-[visible=false]:translate-y-2 data-[visible=false]:opacity-0"
+	class="absolute right-3 bottom-3 flex items-center gap-3 rounded-sm border border-border bg-background/55 px-3 py-2 backdrop-blur-md transition-[opacity,translate] duration-300 ease-out-expo data-[visible=false]:pointer-events-none data-[visible=false]:translate-y-2 data-[visible=false]:opacity-0"
 	{@attach autohide()}
 >
 	{#if enableReactions}

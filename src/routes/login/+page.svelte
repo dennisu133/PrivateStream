@@ -11,12 +11,16 @@
 	<!-- Every action response is a new object, so this rebuilds the card and replays
 	     the shake and slip animations on a repeat failure. -->
 	{#key form}
-		<div class="relative w-full max-w-xs" style:--edge="0.42" class:ticket-shake={!!form?.error}>
+		<div
+			class="relative w-full max-w-xs"
+			style:--frame-opacity="0.42"
+			class:ticket-shake={!!form?.error}
+		>
 			<div class="h-px frame-edge" aria-hidden="true"></div>
 
 			<div class="px-8 py-9">
 				<h1
-					class="mb-8 text-center font-display text-2xl leading-none tracking-widest text-theater-paper"
+					class="mb-8 text-center font-display text-2xl leading-none tracking-widest text-foreground"
 				>
 					{publicTitle}
 				</h1>
@@ -32,14 +36,14 @@
 						autocomplete="current-password"
 						required
 						autofocus
-						class="w-full rounded-sm border bg-theater-dark/70 px-4 py-3 text-center text-sm tracking-wider text-theater-paper transition-colors duration-200 placeholder:tracking-normal placeholder:text-theater-muted/50 focus:border-theater-gold/45 focus:outline-hidden {form?.error
+						class="w-full rounded-sm border bg-surface/70 px-4 py-3 text-center text-sm tracking-wider text-foreground transition-colors duration-200 placeholder:tracking-normal placeholder:text-muted/50 focus:border-accent/45 focus:outline-hidden {form?.error
 							? 'border-red-500/30'
-							: 'border-theater-border'}"
+							: 'border-border'}"
 					/>
 
 					<button
 						type="submit"
-						class="cursor-pointer rounded-sm border border-theater-gold/20 bg-theater-gold/8 px-4 py-3 text-xs font-medium tracking-widest text-theater-gold uppercase transition-colors duration-300 hover:border-theater-gold/40 hover:bg-theater-gold/12"
+						class="cursor-pointer rounded-sm border border-accent/20 bg-accent/8 px-4 py-3 text-xs font-medium tracking-widest text-accent uppercase transition-colors duration-300 hover:border-accent/40 hover:bg-accent/12"
 					>
 						Enter
 					</button>
@@ -66,7 +70,7 @@
 	<!-- Leave room for the absolute error message. -->
 	<a
 		href="/demo"
-		class="mt-20 text-xs tracking-widest text-theater-muted/60 uppercase transition-colors duration-300 hover:text-theater-gold/70"
+		class="mt-20 text-xs tracking-widest text-muted/60 uppercase transition-colors duration-300 hover:text-accent/70"
 	>
 		View demo
 	</a>

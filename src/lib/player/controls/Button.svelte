@@ -21,7 +21,7 @@
 <button
 	bind:this={ref}
 	type="button"
-	class="grid size-8 cursor-pointer place-items-center rounded-sm text-theater-muted transition-all duration-200 ease-cinema hover:bg-theater-gold/10 hover:text-theater-gold focus-visible:ring-1 focus-visible:ring-theater-gold/40 focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+	class="grid size-8 cursor-pointer place-items-center rounded-sm text-muted transition-all duration-200 ease-out-expo hover:bg-accent/10 hover:text-accent focus-visible:ring-1 focus-visible:ring-accent/40 focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
 	aria-label={label}
 	{...restProps}
 >

@@ -26,14 +26,14 @@
 		// text-* here is not for text: currentColor feeds the status-pulse box-shadow.
 		ok: "status-live bg-emerald-400 text-emerald-400",
 		warn: "bg-red-400",
-		pending: "border border-theater-gold/25 bg-transparent",
-		off: "border border-theater-gold/25 bg-transparent"
+		pending: "border border-accent/25 bg-transparent",
+		off: "border border-accent/25 bg-transparent"
 	};
 	const labelClasses: Record<IndicatorState, string> = {
 		ok: "text-emerald-400/85",
 		warn: "text-red-400/85",
-		pending: "text-theater-muted",
-		off: "text-theater-muted"
+		pending: "text-muted",
+		off: "text-muted"
 	};
 
 	const connectionIndicator: Indicator = $derived(
@@ -59,7 +59,7 @@
 		>
 			{#if state === "pending"}
 				<span
-					class="absolute inset-0 m-auto size-1.5 animate-spin rounded-full border border-theater-gold/15 border-t-theater-gold"
+					class="absolute inset-0 m-auto size-1.5 animate-spin rounded-full border border-accent/15 border-t-accent"
 					aria-hidden="true"
 				></span>
 			{/if}
@@ -81,7 +81,7 @@
 		<!-- Same baseline trick as the LED: an empty flex item's baseline is its bottom
 		     edge, so a 0.75em rule stands exactly on the cap band. text-xs is not here
 		     for text: it is the font-size that em resolves against. -->
-		<span class="h-[0.75em] w-px bg-theater-border text-xs" aria-hidden="true"></span>
+		<span class="h-[0.75em] w-px bg-border text-xs" aria-hidden="true"></span>
 		{@render indicator(streamIndicator)}
 	{/if}
 </div>

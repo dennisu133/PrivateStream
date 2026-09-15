@@ -26,7 +26,7 @@
 	.dust-particle {
 		position: absolute;
 		border-radius: 50%;
-		background: color-mix(in oklch, var(--color-theater-paper) 30%, transparent);
+		background: color-mix(in oklch, var(--color-foreground) 30%, transparent);
 		animation: dust-float linear infinite;
 	}
 
