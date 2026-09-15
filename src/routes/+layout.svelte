@@ -24,7 +24,7 @@
 
 	const isBoring = $derived(
 		page.url.pathname === "/boring" ||
-			(page.url.pathname === "/" && import.meta.env.BORING === "true")
+			(page.url.pathname === "/" && import.meta.env.VITE_BORING === "true")
 	);
 </script>
 

@@ -6,7 +6,7 @@
 	import { privateTitle } from "$lib/meta";
 
 	let { data }: { data: PageData } = $props();
-	const boring = import.meta.env.BORING === "true";
+	const boring = import.meta.env.VITE_BORING === "true";
 </script>
 
 <svelte:head>

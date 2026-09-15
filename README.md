@@ -98,11 +98,11 @@ Open `http://127.0.0.1:5173`. The development server only listens on localhost. 
 | `SRS_WHEP_URL`                  | SRS playback endpoint                                                                                     |
 | `ORIGIN`                        | Public HTTPS origin, such as `https://stream.example.com`                                                 |
 | `SERVER_PUBLIC_IP`              | Address advertised to WebRTC viewers                                                                      |
-| `BORING=true`                   | Uses the plain player as the home page and omits the custom widgets at build time                         |
+| `VITE_BORING=true`              | Uses the plain player as the home page and omits the custom widgets at build time                         |
 | `REACTIONS=false`               | Disables reactions and their API                                                                          |
 | `DANGEROUSLY_DISABLE_AUTH=true` | Disables the password gate for local testing only                                                         |
 
-Changing `BORING` requires a rebuild. Never use `DANGEROUSLY_DISABLE_AUTH` in production or commit your `.env` file.
+Changing `VITE_BORING` requires a rebuild. Never use `DANGEROUSLY_DISABLE_AUTH` in production or commit your `.env` file.
 
 ## Production
 
