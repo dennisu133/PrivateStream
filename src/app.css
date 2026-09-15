@@ -1,30 +1,23 @@
 @import "tailwindcss";
 
-/* Measured metrics for the face below, at any size: cap height 0.75em, ascent 1em,
-   descent 0.3333em (so ascent + descent = 1.333em). StatusBar derives its LED and
-   divider alignment offsets from these three numbers.
-   CSS `1cap` is not a substitute: it reports the declared sCapHeight, 0.729em,
-   which is a quarter pixel short of the rendered glyph at 12px. */
 @font-face {
-	font-family: "JetBrains Mono";
-	font-style: normal;
-	font-weight: 300 500;
+	font-family: "Bebas Neue";
+	font-weight: 400;
 	font-display: swap;
-	src: url("$lib/assets/fonts/jetbrains-mono-latin.woff2") format("woff2");
+	src: url("$lib/assets/fonts/bebas-neue-400.woff2") format("woff2");
 }
 
 @font-face {
-	font-family: "Playfair Display";
-	font-style: normal;
-	font-weight: 400 700;
+	font-family: "Geist Mono";
+	font-weight: 300 500;
 	font-display: swap;
-	src: url("$lib/assets/fonts/playfair-display-latin.woff2") format("woff2");
+	src: url("$lib/assets/fonts/geist-mono-300-500.woff2") format("woff2");
 }
 
 @theme {
-	--font-display: "Playfair Display", serif;
-	--font-mono: "JetBrains Mono", monospace;
-	--font-sans: "JetBrains Mono", monospace;
+	--font-display: "Bebas Neue", serif;
+	--font-mono: "Geist Mono", monospace;
+	--font-sans: "Geist Mono", monospace;
 
 	--color-theater-black: oklch(0 0 0);
 	--color-theater-dark: oklch(0.12 0.008 70);
