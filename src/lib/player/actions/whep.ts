@@ -19,6 +19,7 @@ const DISCONNECTED_GRACE_MS = 5000;
 
 export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}) {
 	let stopped = false;
+	let generation = 0;
 	let pc: RTCPeerConnection | null = null;
 	let reconnectTimer: number | null = null;
 	let statsTimer: number | null = null;
@@ -36,17 +37,17 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}) {
 	};
 
 	// Delete the SRS session before reconnecting so it does not linger until timeout.
-	const deleteSession = () => {
-		const url = sessionUrl;
-		sessionUrl = null;
+	const deleteSession = (url = sessionUrl) => {
+		if (url === sessionUrl) sessionUrl = null;
 		// Accept only proxy paths returned by this app.
-		if (!url || !url.startsWith("/")) return;
+		if (!url || !url.startsWith("/api/whep?")) return;
 		console.log("[WHEP] Deleting session", url);
 		fetch(url, { method: "DELETE", keepalive: true }).catch(() => {});
 	};
 
 	// Release peer resources without preventing a later reconnect.
 	const closeConnection = () => {
+		generation += 1;
 		clearReconnect();
 		try {
 			pc?.close();
@@ -87,17 +88,26 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}) {
 		}, delayMs);
 	};
 
-	const negotiate = async (target: RTCPeerConnection) => {
+	const negotiate = async (target: RTCPeerConnection, isCurrent: () => boolean) => {
 		const offer = await target.createOffer();
+		if (!isCurrent()) return;
 		await target.setLocalDescription(offer);
+		if (!isCurrent()) return;
 		const res = await fetch(ENDPOINT, {
 			method: "POST",
 			headers: { "Content-Type": "application/sdp" },
 			body: target.localDescription?.sdp ?? ""
 		});
 		if (!res.ok) throw new Error(`WHEP HTTP ${res.status} ${res.statusText}`);
-		sessionUrl = res.headers.get("Location");
+		const url = res.headers.get("Location");
+		// A response can arrive after teardown or a newer connection attempt.
+		if (!isCurrent()) {
+			deleteSession(url);
+			return;
+		}
+		sessionUrl = url;
 		const answer = await res.text();
+		if (!isCurrent()) return;
 		await target.setRemoteDescription({ type: "answer", sdp: answer });
 		console.log("[WHEP] Connection negotiation successful");
 	};
@@ -111,22 +121,23 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}) {
 
 	const connect = async () => {
 		if (stopped) return;
-		clearReconnect();
 		deleteSession();
+		closeConnection();
+		const attempt = generation;
+		const isCurrent = () => !stopped && attempt === generation;
 
 		let live: boolean;
 		try {
 			live = await isStreamLive();
 		} catch (e) {
+			if (!isCurrent()) return;
 			console.warn("[WHEP] Live status check failed", e);
 			currentReconnectDelayMs = Math.min(MAX_RECONNECT_DELAY_MS, currentReconnectDelayMs * 2);
 			scheduleReconnect();
 			return;
 		}
-		if (stopped) return;
+		if (!isCurrent()) return;
 		if (!live) {
-			// Release any previous peer; there is nothing to receive while offline.
-			closeConnection();
 			// pc.close() fires no state event, so reset the indicator state explicitly.
 			opts.onStateChange?.("new");
 			setReceiving("offline");
@@ -136,9 +147,6 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}) {
 
 		last = { bytes: 0, updatedAt: 0 };
 		setReceiving("pending");
-		try {
-			pc?.close();
-		} catch {}
 		pc = new RTCPeerConnection();
 		const localPc = pc;
 
@@ -146,6 +154,7 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}) {
 		localPc.addTransceiver("audio", { direction: "recvonly" });
 
 		localPc.ontrack = (e) => {
+			if (!isCurrent()) return;
 			console.log(`[WHEP] ${e.track?.kind} track received `, e.track);
 			const stream = e.streams?.[0];
 			if (stream && videoEl.srcObject !== stream) {
@@ -154,7 +163,7 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}) {
 		};
 
 		localPc.onconnectionstatechange = () => {
-			if (localPc !== pc) return;
+			if (!isCurrent()) return;
 			const state = localPc.connectionState;
 			console.log("[WHEP] RTC state:", state);
 			opts.onStateChange?.(state);
@@ -172,8 +181,9 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}) {
 		};
 
 		try {
-			await negotiate(localPc);
+			await negotiate(localPc, isCurrent);
 		} catch (e) {
+			if (!isCurrent()) return;
 			console.error("[WHEP] Connection negotiation failed", e);
 			currentReconnectDelayMs = Math.min(MAX_RECONNECT_DELAY_MS, currentReconnectDelayMs * 2);
 			scheduleReconnect();
@@ -183,7 +193,9 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}) {
 	const checkStats = async () => {
 		if (stopped || !pc || pc.connectionState !== "connected") return;
 		try {
-			const reports = await pc.getStats();
+			const target = pc;
+			const reports = await target.getStats();
+			if (stopped || target !== pc) return;
 			let bytes = 0;
 			for (const rep of reports.values()) {
 				if (

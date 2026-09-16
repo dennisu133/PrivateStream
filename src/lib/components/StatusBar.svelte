@@ -1,11 +1,16 @@
 <script lang="ts">
-	import { connection } from "$lib/state/connection.svelte";
 	import type { IndicatorState, ReceivingState } from "$lib/types";
 
 	type Indicator = { state: IndicatorState; label: string };
 
 	// demo: a looping local file, so connection and stream state say nothing useful.
-	let { demo = false }: { demo?: boolean } = $props();
+	let {
+		demo = false,
+		connection
+	}: {
+		demo?: boolean;
+		connection: { state: RTCPeerConnectionState; stream: ReceivingState };
+	} = $props();
 
 	const connectionIndicators: Partial<Record<RTCPeerConnectionState, Indicator>> = {
 		connected: { state: "ok", label: "Connected" },

@@ -5,7 +5,7 @@
 	import { resizable } from "$lib/attachments/resizable";
 	import FrameBrackets from "$lib/components/FrameBrackets.svelte";
 	import StatusBar from "$lib/components/StatusBar.svelte";
-	import { connection } from "$lib/state/connection.svelte";
+	import type { ReceivingState } from "$lib/types";
 	import poster from "$lib/assets/poster.webp";
 
 	// demoSrc switches the player from WHEP to a looping local video.
@@ -20,17 +20,16 @@
 	let frameEl = $state<HTMLDivElement | null>(null);
 	let videoEl = $state<HTMLVideoElement | null>(null);
 
+	const connection = $state({
+		state: "new" as RTCPeerConnectionState,
+		stream: "pending" as ReceivingState
+	});
+
 	const isLive = $derived(connection.stream === "live");
 
 	onMount(() => {
 		if (!videoEl) return;
 		const video = videoEl;
-
-		// connection is a shared singleton, so both paths hand it back as they found it.
-		const reset = () => {
-			connection.state = "new";
-			connection.stream = "pending";
-		};
 
 		if (demoSrc) {
 			const handlePlaying = () => {
@@ -41,7 +40,6 @@
 
 			return () => {
 				video.removeEventListener("playing", handlePlaying);
-				reset();
 			};
 		}
 
@@ -52,7 +50,6 @@
 
 		return () => {
 			controller.destroy();
-			reset();
 		};
 	});
 </script>
@@ -110,6 +107,6 @@
 	</div>
 
 	<div class="cursor-default">
-		<StatusBar demo={Boolean(demoSrc)} />
+		<StatusBar {connection} demo={Boolean(demoSrc)} />
 	</div>
 </div>

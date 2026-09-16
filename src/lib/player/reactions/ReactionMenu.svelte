@@ -14,6 +14,7 @@
 		onClose: () => void;
 	} = $props();
 
+	let tabbingAway = false;
 	let selectedIndex = $state(0);
 	let menuEl = $state<HTMLDivElement | null>(null);
 
@@ -32,7 +33,19 @@
 		};
 	});
 
-	// Capture, so a click on the toggle button reaches this before the button's own handler.
+	// Capture runs before the toggle button's own click handler.
+	function onDocumentClick({ target }: MouseEvent) {
+		const node = target as Node;
+		if (!menuEl?.contains(node) && !toggleButtonEl?.contains(node)) onClose();
+	}
+
+	function handleFocusOut(event: FocusEvent) {
+		// Clicking the trigger closes through its own toggle handler. Closing here
+		// first would let that click immediately reopen the menu.
+		if (!tabbingAway && event.relatedTarget === toggleButtonEl) return;
+		if (!menuEl?.contains(event.relatedTarget as Node | null)) onClose();
+	}
+
 	$effect(() => {
 		const onDocumentClick = ({ target }: MouseEvent) => {
 			const node = target as Node;
@@ -69,6 +82,7 @@
 	}
 
 	function handleMenuKeydown(e: KeyboardEvent) {
+		tabbingAway = e.key === "Tab";
 		if (e.key === "Escape") {
 			e.preventDefault();
 			e.stopPropagation();
@@ -76,38 +90,23 @@
 		} else if (e.key === "Enter" || e.key === " ") {
 			e.preventDefault();
 			handleSelect(reactions[selectedIndex]);
-		} else if (e.key === "Tab") {
-			// The options are not tab stops, so Tab steps the selection here. Without
-			// this the browser moved focus into an option while selectedIndex stayed
-			// put, and Enter then fired whichever reaction the ring was still on.
-			e.preventDefault();
-			step(e.shiftKey ? -1 : 1);
-		} else if (handleArrowKey(e.key)) {
-			e.preventDefault();
-		}
-	}
-
-	function handleGlobalKeydown(e: KeyboardEvent) {
-		// The focused menu handles its own keys; otherwise intercept arrows before VolumeControls.
-		if (menuEl?.contains(document.activeElement)) return;
-		if (e.key === "Escape") {
-			e.preventDefault();
-			onClose();
 		} else if (handleArrowKey(e.key)) {
 			e.preventDefault();
 		}
 	}
 </script>
 
-<svelte:window onkeydown={handleGlobalKeydown} />
+<svelte:document onclickcapture={onDocumentClick} />
 
 <div
 	bind:this={menuEl}
 	role="listbox"
+	aria-label="Reactions"
 	tabindex="0"
 	aria-activedescendant="reaction-option-{selectedIndex}"
 	class="theater-scrollbar grid min-h-0 grid-cols-3 gap-2 overflow-y-auto rounded-md border border-border bg-background/85 p-3 outline-hidden backdrop-blur-sm"
 	onkeydown={handleMenuKeydown}
+	onfocusout={handleFocusOut}
 >
 	{#each reactions as r, i (r.id)}
 		<button

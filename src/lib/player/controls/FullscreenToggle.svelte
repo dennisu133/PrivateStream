@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from "svelte";
 	import { Maximize, Minimize } from "@lucide/svelte";
 	import Button from "./Button.svelte";
 	import { dispatchAutohide } from "$lib/attachments/autohide";
@@ -10,14 +9,11 @@
 		target?: HTMLElement | null;
 	} = $props();
 
-	let isFullscreen = $state(false);
+	let fullscreenElement = $state<Element | null>(null);
+	const isFullscreen = $derived(target !== null && fullscreenElement === target);
 
 	// target is the frame, which is the autohide monitor itself.
 	const dispatchShow = () => dispatchAutohide(target, "autohide:show");
-
-	const syncFullscreen = () => {
-		isFullscreen = document.fullscreenElement === target;
-	};
 
 	const toggleFullscreen = async () => {
 		if (!target) return;
@@ -49,13 +45,9 @@
 		event.preventDefault();
 		toggleFullscreen();
 	};
-
-	onMount(() => {
-		syncFullscreen();
-		document.addEventListener("fullscreenchange", syncFullscreen);
-		return () => document.removeEventListener("fullscreenchange", syncFullscreen);
-	});
 </script>
+
+<svelte:document bind:fullscreenElement />
 
 <svelte:window onkeydown={handleKeydown} />
 
