@@ -24,10 +24,10 @@
 	// override lets whichever Tailwind emits last win, not whichever is written last.
 	const ledClasses: Record<IndicatorState, string> = {
 		// text-* here is not for text: currentColor feeds the status-pulse box-shadow.
-		ok: "status-live bg-emerald-400 text-emerald-400",
-		warn: "bg-red-400",
-		pending: "border border-accent/25 bg-transparent",
-		off: "border border-accent/25 bg-transparent"
+		ok: "status-live text-emerald-400",
+		warn: "text-red-400",
+		pending: "text-accent/25",
+		off: "text-accent/25"
 	};
 	const labelClasses: Record<IndicatorState, string> = {
 		ok: "text-emerald-400/85",
@@ -46,17 +46,21 @@
 	<span
 		class="inline-flex items-baseline gap-2.5 text-xs leading-none font-light tracking-widest uppercase"
 	>
-		<!-- No offset math: an empty box's baseline is its own bottom edge, and the cap
-		     height is 0.75em, so baseline alignment seats the LED on the cap band at any
-		     zoom. Offsets measured from the line box top cannot: the box snaps to device
-		     pixels, the glyphs do not. overflow-hidden keeps the baseline synthesized
-		     from the border box even while the spinner is inside. Metrics in app.css. -->
+		<!-- Geist Mono's rounded capitals span -16 to 726, with 1000 font units per em.
+		     Include that overshoot and lower the circle's bottom just below the baseline. -->
 		<span
-			class="relative inline-block size-[0.75em] shrink-0 overflow-hidden rounded-full {ledClasses[
+			class="relative top-[0.016em] inline-block size-[0.742em] shrink-0 overflow-hidden rounded-full {ledClasses[
 				state
 			]}"
 			aria-hidden="true"
 		>
+			<svg class="absolute inset-0 size-full" viewBox="0 0 742 742" fill="none">
+				{#if state === "off" || state === "pending"}
+					<circle cx="371" cy="371" r="329" stroke="currentColor" stroke-width="84" />
+				{:else}
+					<circle cx="371" cy="371" r="371" fill="currentColor" />
+				{/if}
+			</svg>
 			{#if state === "pending"}
 				<span
 					class="absolute inset-0 m-auto size-1.5 animate-spin rounded-full border border-accent/15 border-t-accent"
@@ -78,10 +82,8 @@
 		{@render indicator(connectionIndicator)}
 	{/if}
 	{#if !demo && connection.stream !== "offline" && connectionIndicator.state === "ok"}
-		<!-- Same baseline trick as the LED: an empty flex item's baseline is its bottom
-		     edge, so a 0.75em rule stands exactly on the cap band. text-xs is not here
-		     for text: it is the font-size that em resolves against. -->
-		<span class="h-[0.75em] w-px bg-border text-xs" aria-hidden="true"></span>
+		<!-- Use the same font size and cap height as the indicators. -->
+		<span class="h-[1cap] w-px bg-border text-xs" aria-hidden="true"></span>
 		{@render indicator(streamIndicator)}
 	{/if}
 </div>
