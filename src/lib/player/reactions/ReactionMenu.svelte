@@ -125,7 +125,7 @@
 				alt=""
 				loading="lazy"
 			/>
-			<span class="truncate text-center text-xs">{r.name}</span>
+			<span class="truncate text-center font-sans text-xs">{r.name}</span>
 		</button>
 	{/each}
 </div>

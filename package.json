@@ -5,8 +5,8 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
-		"build": "vite build && bun run scripts/subset-fonts.mjs",
-		"build:boring": "vite build --mode boring && bun run scripts/subset-fonts.mjs boring",
+		"build": "vite build",
+		"build:boring": "vite build --mode boring",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",

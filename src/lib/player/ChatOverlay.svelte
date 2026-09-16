@@ -103,7 +103,7 @@
 		{#if announcement}<span>{announcement.text}</span>{/if}
 	{/key}
 </div>
-<div class="chat-overlay" aria-hidden="true" {@attach ticker}></div>
+<div class="chat-overlay font-sans" aria-hidden="true" {@attach ticker}></div>
 
 <style>
 	.chat-overlay {

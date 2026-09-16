@@ -4,14 +4,18 @@ import tailwindcss from "@tailwindcss/vite";
 import { sveltekit } from "@sveltejs/kit/vite";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
+import { subsetFonts } from "./scripts/subset-fonts.mjs";
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(async ({ mode, command }) => {
+	const fontDirectory = command === "build" ? await subsetFonts(mode) : null;
 	const boring = mode === "boring";
 	const emptyComponent = fileURLToPath(
 		new URL("./src/lib/components/Empty.svelte", import.meta.url)
 	);
 
 	return {
+		// Small title subsets must remain files: CSP permits only self-hosted fonts.
+		build: { assetsInlineLimit: (path: string) => (path.endsWith(".woff2") ? false : undefined) },
 		plugins: [
 			tailwindcss(),
 			sveltekit({
@@ -47,6 +51,11 @@ export default defineConfig(({ mode }) => {
 		resolve: {
 			alias: [
 				{
+					find: "$fonts",
+					replacement:
+						fontDirectory ?? fileURLToPath(new URL("./src/lib/assets/fonts", import.meta.url))
+				},
+				{
 					find: "virtual:catchip-widget",
 					replacement: boring
 						? emptyComponent
@@ -61,9 +70,7 @@ export default defineConfig(({ mode }) => {
 			]
 		},
 		server: {
-			host: "127.0.0.1",
-			// Allow the browser check in tests/ to load through Vite during development.
-			fs: { allow: [fileURLToPath(new URL("./tests", import.meta.url))] }
+			host: "127.0.0.1"
 		}
 	};
 });
