@@ -102,3 +102,38 @@ test("a stale response cannot overwrite the session created after bfcache restor
 	player!.destroy();
 	expect(deletes).toEqual(["/api/whep?loc=stale", "/api/whep?loc=current"]);
 });
+
+test("offline polls stay offline until a slow check, then recover", async () => {
+	setup();
+	player!.destroy();
+	const timers: { callback: () => void; delay: number }[] = [];
+	window.setTimeout = ((callback: () => void, delay: number) => {
+		timers.push({ callback, delay });
+		return timers.length;
+	}) as typeof window.setTimeout;
+	let response = deferred<Response>();
+	globalThis.fetch = (() => response.promise) as unknown as typeof fetch;
+	const states: string[] = [];
+	player = startWhep({ srcObject: null } as HTMLVideoElement, {
+		onReceivingChange: (state) => states.push(state)
+	});
+	response.resolve(Response.json({ live: false }));
+	await flush();
+	expect(states.at(-1)).toBe("offline");
+
+	states.length = 0;
+	response = deferred<Response>();
+	timers.findLast((timer) => timer.delay === 3000)!.callback();
+	expect(states).toEqual([]);
+	response.resolve(Response.json({ live: false }));
+	await flush();
+	expect(states).toEqual([]);
+
+	response = deferred<Response>();
+	timers.findLast((timer) => timer.delay === 3000)!.callback();
+	timers.findLast((timer) => timer.delay === 2000)!.callback();
+	expect(states).toEqual(["pending"]);
+	response.resolve(Response.json({ live: false }));
+	await flush();
+	expect(states).toEqual(["pending", "offline"]);
+});

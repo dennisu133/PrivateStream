@@ -119,8 +119,6 @@
 			{@render indicator(connectionIndicator)}
 		{/if}
 		{#if !demo && connection.stream !== "offline" && connectionIndicator.state === "ok"}
-			<!-- Use the same font size and cap height as the indicators. -->
-			<span class="h-[1cap] w-px bg-border text-xs" aria-hidden="true"></span>
 			{@render indicator(streamIndicator)}
 		{/if}
 	</div>

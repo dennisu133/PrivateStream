@@ -9,6 +9,7 @@ const ENDPOINT = "/api/whep";
 const STATUS_ENDPOINT = "/api/stream";
 // While the broadcaster is offline, poll the cheap status endpoint instead of negotiating.
 const LIVE_POLL_MS = 3000;
+const STATUS_PENDING_DELAY_MS = 2000;
 const RECONNECT_DELAY_MS = 1500;
 const MAX_RECONNECT_DELAY_MS = 30_000;
 const WATCHDOG_INTERVAL_MS = 2000;
@@ -58,7 +59,7 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}) {
 			ms?.getTracks().forEach((t) => t.stop());
 		} catch {}
 		videoEl.srcObject = null;
-		setReceiving("idle");
+		if (receiving !== "offline") setReceiving("idle");
 	};
 
 	// Close peer resources for bfcache; keepalive lets session deletion finish.
@@ -125,16 +126,23 @@ export function startWhep(videoEl: HTMLVideoElement, opts: WhepOptions = {}) {
 		closeConnection();
 		const attempt = generation;
 		const isCurrent = () => !stopped && attempt === generation;
+		// Keep the last offline result visible during quick background polls.
+		const pendingTimer = window.setTimeout(() => {
+			if (isCurrent()) setReceiving("pending");
+		}, STATUS_PENDING_DELAY_MS);
 
 		let live: boolean;
 		try {
 			live = await isStreamLive();
 		} catch (e) {
 			if (!isCurrent()) return;
+			setReceiving("pending");
 			console.warn("[WHEP] Live status check failed", e);
 			currentReconnectDelayMs = Math.min(MAX_RECONNECT_DELAY_MS, currentReconnectDelayMs * 2);
 			scheduleReconnect();
 			return;
+		} finally {
+			clearTimeout(pendingTimer);
 		}
 		if (!isCurrent()) return;
 		if (!live) {
