@@ -77,7 +77,7 @@
 	</span>
 {/snippet}
 
-<div class="mt-5 flex items-baseline gap-4 px-1" role="status">
+<div class="flex shrink-0 items-baseline gap-4 px-1" role="status">
 	{#if demo}
 		{@render indicator({ state: "ok", label: "Demo" })}
 	{:else if connection.stream === "offline"}

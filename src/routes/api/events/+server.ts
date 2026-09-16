@@ -2,10 +2,11 @@ import { error, json } from "@sveltejs/kit";
 import { env } from "$env/dynamic/private";
 import { clientKey, createFixedWindowRateLimiter } from "$lib/server/rate-limit";
 import { reactions } from "$lib/player/reactions/reactions";
+import { parseStreamEvent } from "$lib/events";
 import type { RequestHandler } from "./$types";
 
 // Allow bursts without letting one viewer dominate the overlay.
-const reactionRateLimiter = createFixedWindowRateLimiter({
+const eventRateLimiter = createFixedWindowRateLimiter({
 	windowMs: 10_000,
 	perKeyLimit: 30,
 	globalLimit: 120
@@ -45,9 +46,9 @@ function stopKeepAlive() {
 	}
 }
 
-function requireReactionAccess(locals: App.Locals) {
+function requireEventAccess(locals: App.Locals) {
 	if (env.REACTIONS === "false") {
-		throw error(404, "Reactions are disabled");
+		throw error(404, "Events are disabled");
 	}
 
 	if (!locals.user) {
@@ -56,7 +57,7 @@ function requireReactionAccess(locals: App.Locals) {
 }
 
 export const GET: RequestHandler = ({ locals }) => {
-	requireReactionAccess(locals);
+	requireEventAccess(locals);
 
 	let streamController: ReadableStreamDefaultController;
 
@@ -83,24 +84,21 @@ export const GET: RequestHandler = ({ locals }) => {
 };
 
 export const POST: RequestHandler = async ({ locals, request, getClientAddress, setHeaders }) => {
-	requireReactionAccess(locals);
+	requireEventAccess(locals);
 
-	const rateLimit = reactionRateLimiter.consume(clientKey(getClientAddress));
+	const rateLimit = eventRateLimiter.consume(clientKey(getClientAddress));
 	if (!rateLimit.allowed) {
 		setHeaders({ "Retry-After": rateLimit.retryAfterSeconds.toString() });
-		throw error(429, "Too many reactions. Slow down a little.");
+		throw error(429, "Too many events. Slow down a little.");
 	}
 
-	const body = await request.json().catch(() => null);
-	if (!body || typeof body.id !== "string") {
-		throw error(400, "Missing or invalid reaction id");
-	}
-
-	if (!validReactionIds.has(body.id)) {
+	const event = parseStreamEvent(await request.json().catch(() => null));
+	if (!event) throw error(400, "Invalid event. Messages must contain 1–200 characters.");
+	if (event.type === "reaction" && !validReactionIds.has(event.id)) {
 		throw error(400, "Unknown reaction id");
 	}
 
-	send(`event: reaction\ndata: ${JSON.stringify({ id: body.id })}\n\n`);
+	send(`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`);
 
 	return json({ success: true });
 };

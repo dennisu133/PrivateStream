@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from "svelte";
+	import ChatInput from "./ChatInput.svelte";
 	import PlayerControls from "./PlayerControls.svelte";
 	import { startWhep } from "./actions/whep";
 	import { resizable } from "$lib/attachments/resizable";
@@ -19,6 +20,9 @@
 
 	let frameEl = $state<HTMLDivElement | null>(null);
 	let videoEl = $state<HTMLVideoElement | null>(null);
+	let controlsWidth = $state(0);
+	let chatDraft = $state("");
+	let chatInput = $state<HTMLInputElement | null>(null);
 
 	const connection = $state({
 		state: "new" as RTCPeerConnectionState,
@@ -62,14 +66,15 @@
 </svelte:head>
 
 <!-- Width is 72vw, capped so the 16:9 frame plus its chrome still fits in 82vh, and
-     floored at 20rem. The p-3 gutter above 448px doubles as the resize handle ring,
+     floored at the controls' width plus both insets and the resize gutter (at least 20rem).
+     The p-3 gutter above 448px doubles as the resize handle ring,
      which is why resizable.ts only enables dragging well above that breakpoint. -->
 <div
-	class="relative w-[72vw] max-w-[min(90vw,calc((82vh-4rem)*16/9))] min-w-80 p-0 transition-[--frame-opacity] duration-700 ease-out-expo min-[448px]:p-3"
+	class="relative w-[72vw] max-w-[min(90vw,calc((82vh-4rem)*16/9))] min-w-[max(20rem,calc(var(--controls-width)+1.5rem))] p-0 transition-[--frame-opacity] duration-700 ease-out-expo min-[448px]:min-w-[max(20rem,calc(var(--controls-width)+3rem))] min-[448px]:p-3"
 	style:--frame-opacity={isLive ? 0.55 : 0.22}
+	style:--controls-width={`${controlsWidth}px`}
 	role="region"
 	aria-label="Live stream player"
-	aria-busy={!isLive}
 	{@attach resizable({ surfaceSelector: "[data-resize-surface]" })}
 >
 	<!-- The status bar follows this surface's width without affecting its aspect ratio. -->
@@ -86,6 +91,7 @@
 			<video
 				bind:this={videoEl}
 				aria-label="Video stream"
+				aria-busy={!isLive}
 				tabindex="-1"
 				poster={demoSrc ? undefined : poster}
 				src={demoSrc ?? undefined}
@@ -93,12 +99,19 @@
 				autoplay
 				muted
 				playsinline
-				class="size-full"
+				class="size-full outline-none"
 			>
 				Your browser does not support video playback.
 			</video>
 
-			<PlayerControls frame={frameEl} video={videoEl} enableReactions={enableFunFeatures} />
+			<PlayerControls
+				frame={frameEl}
+				video={videoEl}
+				enableReactions={enableFunFeatures}
+				bind:chatDraft
+				bind:controlsWidth
+				{chatInput}
+			/>
 		</div>
 
 		<div class="h-px frame-edge" style:--edge-scale="0.66" aria-hidden="true"></div>
@@ -106,7 +119,12 @@
 		<FrameBrackets />
 	</div>
 
-	<div class="cursor-default">
-		<StatusBar {connection} demo={Boolean(demoSrc)} />
+	<div class="@container cursor-default">
+		<div class="mt-5 flex flex-col gap-3 @2xl:flex-row @2xl:items-start @2xl:justify-between">
+			<StatusBar {connection} demo={Boolean(demoSrc)} />
+			{#if enableFunFeatures && !demoSrc}
+				<ChatInput bind:text={chatDraft} bind:ref={chatInput} />
+			{/if}
+		</div>
 	</div>
 </div>

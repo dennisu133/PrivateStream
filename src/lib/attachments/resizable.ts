@@ -35,7 +35,7 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 		let dragStartY = 0;
 		let dragStartWidth = 0;
 		let dragAspectRatio = 1;
-		// Constraints derive from the viewport only, so they hold for a whole drag.
+		// CSS constraints are stable during a drag unless the viewport changes.
 		// Recomputing per pointermove costs a getComputedStyle and two layout reads.
 		let dragConstraints: { min: number; max: number } | null = null;
 
@@ -73,7 +73,8 @@ export function resizable(options: ResizableOptions = {}): Attachment<HTMLElemen
 
 		const clampWidth = (value: number) => {
 			const { min, max } = dragConstraints ?? getConstraints();
-			return Math.min(Math.max(value, min), max);
+			// Match CSS sizing: the minimum wins when it exceeds the maximum.
+			return Math.max(min, Math.min(value, max));
 		};
 
 		const setDataAttr = (name: string, value: string | null) => {

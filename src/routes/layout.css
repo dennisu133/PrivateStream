@@ -14,10 +14,17 @@
 	src: url("$lib/assets/fonts/geist-mono-300-500.woff2") format("woff2");
 }
 
+@font-face {
+	font-family: "Geist Sans";
+	font-weight: 600;
+	font-display: swap;
+	src: url("$lib/assets/fonts/geist-sans-600.woff2") format("woff2");
+}
+
 @theme {
-	--font-display: "Bebas Neue", serif;
-	--font-mono: "Geist Mono", monospace;
-	--font-sans: "Geist Mono", monospace;
+	--font-display: "Bebas Neue", Impact, sans-serif;
+	--font-mono: "Geist Mono", ui-monospace, monospace;
+	--font-sans: "Geist Sans", ui-sans-serif, system-ui, sans-serif;
 
 	--color-background: oklch(0 0 0);
 	--color-surface: oklch(0.12 0.008 70);

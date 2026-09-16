@@ -60,6 +60,10 @@ export default defineConfig(({ mode }) => {
 				}
 			]
 		},
-		server: { host: "127.0.0.1" }
+		server: {
+			host: "127.0.0.1",
+			// Allow the browser check in tests/ to load through Vite during development.
+			fs: { allow: [fileURLToPath(new URL("./tests", import.meta.url))] }
+		}
 	};
 });

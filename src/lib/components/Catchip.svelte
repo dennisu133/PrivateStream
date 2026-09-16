@@ -34,3 +34,12 @@
 		/>
 	</button>
 {/if}
+
+<style>
+	@media (orientation: landscape) and (max-height: 32rem) {
+		img {
+			width: 80px;
+			height: 80px;
+		}
+	}
+</style>

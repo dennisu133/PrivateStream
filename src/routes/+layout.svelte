@@ -3,6 +3,7 @@
 	import favicon from "$lib/assets/favicon.ico";
 	import fontBebasNeue from "$lib/assets/fonts/bebas-neue-400.woff2";
 	import fontGeistMono from "$lib/assets/fonts/geist-mono-300-500.woff2";
+	import fontGeistSans from "$lib/assets/fonts/geist-sans-600.woff2";
 
 	import { publicTitle } from "$lib/meta";
 	import { page } from "$app/state";
@@ -21,6 +22,7 @@
 <svelte:head>
 	<link rel="preload" href={fontBebasNeue} as="font" type="font/woff2" crossorigin="anonymous" />
 	<link rel="preload" href={fontGeistMono} as="font" type="font/woff2" crossorigin="anonymous" />
+	<link rel="preload" href={fontGeistSans} as="font" type="font/woff2" crossorigin="anonymous" />
 
 	<link rel="icon" href={favicon} />
 	<title>{publicTitle}</title>
