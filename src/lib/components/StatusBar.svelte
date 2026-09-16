@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Eye } from "@lucide/svelte";
 	import type { IndicatorState, ReceivingState } from "$lib/types";
 
 	type Indicator = { state: IndicatorState; label: string };
@@ -11,6 +12,36 @@
 		demo?: boolean;
 		connection: { state: RTCPeerConnectionState; stream: ReceivingState };
 	} = $props();
+
+	let viewers = $state<number | null>(null);
+
+	$effect(() => {
+		if (demo) return;
+		let stopped = false;
+		let timer: ReturnType<typeof setTimeout>;
+		const controller = new AbortController();
+		async function refresh() {
+			try {
+				const response = await fetch("/api/stream", {
+					signal: AbortSignal.any([controller.signal, AbortSignal.timeout(8000)])
+				});
+				if (!response.ok) throw new Error("Status unavailable");
+				const data = await response.json();
+				if (!stopped)
+					viewers = Number.isInteger(data.viewers) && data.viewers >= 0 ? data.viewers : null;
+			} catch {
+				if (!stopped) viewers = null;
+			} finally {
+				if (!stopped) timer = setTimeout(refresh, 3000);
+			}
+		}
+		void refresh();
+		return () => {
+			stopped = true;
+			controller.abort();
+			clearTimeout(timer);
+		};
+	});
 
 	const connectionIndicators: Partial<Record<RTCPeerConnectionState, Indicator>> = {
 		connected: { state: "ok", label: "Connected" },
@@ -77,19 +108,37 @@
 	</span>
 {/snippet}
 
-<div class="flex shrink-0 items-baseline gap-4 px-1" role="status">
-	{#if demo}
-		{@render indicator({ state: "ok", label: "Demo" })}
-	{:else if connection.stream === "offline"}
-		<!-- No connection indicator: there is nothing to connect to while offline. -->
-		{@render indicator(streamIndicator)}
-	{:else}
-		{@render indicator(connectionIndicator)}
-	{/if}
-	{#if !demo && connection.stream !== "offline" && connectionIndicator.state === "ok"}
-		<!-- Use the same font size and cap height as the indicators. -->
-		<span class="h-[1cap] w-px bg-border text-xs" aria-hidden="true"></span>
-		{@render indicator(streamIndicator)}
+<div class="flex shrink-0 flex-wrap items-baseline gap-4 px-1">
+	<div class="flex flex-wrap items-baseline gap-4" role="status">
+		{#if demo}
+			{@render indicator({ state: "ok", label: "Demo" })}
+		{:else if connection.stream === "offline"}
+			<!-- No connection indicator: there is nothing to connect to while offline. -->
+			{@render indicator(streamIndicator)}
+		{:else}
+			{@render indicator(connectionIndicator)}
+		{/if}
+		{#if !demo && connection.stream !== "offline" && connectionIndicator.state === "ok"}
+			<!-- Use the same font size and cap height as the indicators. -->
+			<span class="h-[1cap] w-px bg-border text-xs" aria-hidden="true"></span>
+			{@render indicator(streamIndicator)}
+		{/if}
+	</div>
+	{#if !demo && connection.stream === "live"}
+		<span
+			class="inline-flex items-baseline gap-2 text-xs leading-none font-light tracking-widest text-muted uppercase"
+			title="Active playback connections, including the plain player"
+		>
+			<span class="relative inline-block h-[1cap] w-3.5" aria-hidden="true">
+				<Eye size={14} class="absolute top-1/2 -translate-y-1/2" />
+			</span>
+			{#if viewers === null}
+				<span aria-hidden="true">— viewers</span>
+				<span class="sr-only">Viewer count unavailable</span>
+			{:else}
+				<span>{viewers} {viewers === 1 ? "viewer" : "viewers"}</span>
+			{/if}
+		</span>
 	{/if}
 </div>
 

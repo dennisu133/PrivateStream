@@ -6,5 +6,5 @@ export const GET: RequestHandler = async ({ locals }) => {
 	if (!locals.user) {
 		throw error(401, "Unauthorized");
 	}
-	return json({ live: await streamStatus.isLive() });
+	return json(await streamStatus.get(), { headers: { "Cache-Control": "no-store" } });
 };
