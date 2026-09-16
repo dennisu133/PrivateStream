@@ -194,38 +194,6 @@
 </div>
 
 <style>
-	input[type="range"] {
-		--track-fill: var(--color-accent-dim);
-		--track-empty: color-mix(in oklch, var(--color-accent) 14%, transparent);
-		/* Filled up to the thumb, dim past it, and hover brightens both halves. The
-		   gradient is defined once so both engines paint from the same value. */
-		--track: linear-gradient(
-			to right,
-			var(--track-fill) var(--volume-fill, 0%),
-			var(--track-empty) var(--volume-fill, 0%)
-		);
-
-		-webkit-appearance: none;
-		appearance: none;
-		height: 3px;
-		background: var(--track);
-		border-radius: 2px;
-		outline: none;
-		cursor: pointer;
-		transition: background 0.2s ease;
-	}
-
-	input[type="range"]:hover {
-		--track-fill: var(--color-accent);
-		--track-empty: color-mix(in oklch, var(--color-accent) 30%, transparent);
-	}
-
-	/* The ring lives on the wrapper: an outline on the 3px input inherits the
-	   track's radius and renders as a pill. rounded-sm matches the Buttons. */
-	.volume-box:has(input:focus-visible) {
-		outline: 1px solid color-mix(in oklch, var(--color-accent) 40%, transparent);
-	}
-
 	/* Before the stored value is in, the icon would show the default muted state, so it
 	   hides along with the thumb. :global because the svg is rendered by the icon
 	   component and carries no scope class. */
@@ -246,43 +214,79 @@
 		opacity: 0;
 	}
 
-	input[type="range"]::-webkit-slider-thumb {
-		-webkit-appearance: none;
-		appearance: none;
-		width: 10px;
-		height: 10px;
-		border-radius: 50%;
-		/* Keep the thumb opaque so the track does not show through. */
-		background: var(--color-muted);
-		cursor: pointer;
-		transition:
-			background 0.2s ease,
-			transform 0.15s ease;
-	}
+	/* Keep the native range control in forced colors so the system palette paints
+	   its track, thumb and keyboard focus together. */
+	@media (forced-colors: none) {
+		input[type="range"] {
+			--track-fill: var(--color-accent-dim);
+			--track-empty: color-mix(in oklch, var(--color-accent) 14%, transparent);
+			/* Filled up to the thumb, dim past it, and hover brightens both halves. The
+			   gradient is defined once so both engines paint from the same value. */
+			--track: linear-gradient(
+				to right,
+				var(--track-fill) var(--volume-fill, 0%),
+				var(--track-empty) var(--volume-fill, 0%)
+			);
 
-	input[type="range"]:hover::-webkit-slider-thumb {
-		background: var(--color-accent);
-		transform: scale(1.2);
-	}
+			-webkit-appearance: none;
+			appearance: none;
+			height: 3px;
+			background: var(--track);
+			border-radius: 2px;
+			outline: none;
+			cursor: pointer;
+			transition: background 0.2s ease;
+		}
 
-	input[type="range"]::-moz-range-thumb {
-		width: 10px;
-		height: 10px;
-		border-radius: 50%;
-		background: var(--color-muted);
-		cursor: pointer;
-		border: none;
-		transition: background 0.2s ease;
-	}
+		input[type="range"]:hover {
+			--track-fill: var(--color-accent);
+			--track-empty: color-mix(in oklch, var(--color-accent) 30%, transparent);
+		}
 
-	input[type="range"]:hover::-moz-range-thumb {
-		background: var(--color-accent);
-	}
+		/* The ring lives on the wrapper: an outline on the 3px input inherits the
+		   track's radius and renders as a pill. rounded-sm matches the Buttons. */
+		.volume-box:has(input:focus-visible) {
+			outline: 1px solid color-mix(in oklch, var(--color-accent) 40%, transparent);
+		}
 
-	input[type="range"]::-moz-range-track {
-		height: 3px;
-		background: var(--track);
-		border-radius: 2px;
-		transition: background 0.2s ease;
+		input[type="range"]::-webkit-slider-thumb {
+			-webkit-appearance: none;
+			appearance: none;
+			width: 10px;
+			height: 10px;
+			border-radius: 50%;
+			/* Keep the thumb opaque so the track does not show through. */
+			background: var(--color-muted);
+			cursor: pointer;
+			transition:
+				background 0.2s ease,
+				transform 0.15s ease;
+		}
+
+		input[type="range"]:hover::-webkit-slider-thumb {
+			background: var(--color-accent);
+			transform: scale(1.2);
+		}
+
+		input[type="range"]::-moz-range-thumb {
+			width: 10px;
+			height: 10px;
+			border-radius: 50%;
+			background: var(--color-muted);
+			cursor: pointer;
+			border: none;
+			transition: background 0.2s ease;
+		}
+
+		input[type="range"]:hover::-moz-range-thumb {
+			background: var(--color-accent);
+		}
+
+		input[type="range"]::-moz-range-track {
+			height: 3px;
+			background: var(--track);
+			border-radius: 2px;
+			transition: background 0.2s ease;
+		}
 	}
 </style>
