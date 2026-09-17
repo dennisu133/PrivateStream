@@ -134,14 +134,6 @@
 				</div>
 			</div>
 		{/key}
-
-		<!-- Leave room for the absolute error message. -->
-		<a
-			href="/demo"
-			class="mt-20 rounded-sm text-xs tracking-widest text-muted/60 uppercase transition-colors duration-300 hover:text-accent/70 focus-visible:text-accent focus-visible:outline-1 focus-visible:outline-offset-8 focus-visible:outline-accent/60"
-		>
-			View demo
-		</a>
 	</div>
 </div>
 
