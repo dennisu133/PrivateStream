@@ -4,6 +4,7 @@
 	import { autohide, dispatchAutohide } from "$lib/attachments/autohide";
 	import Button from "./controls/Button.svelte";
 	import FullscreenToggle from "./controls/FullscreenToggle.svelte";
+	import TheaterToggle from "./controls/TheaterToggle.svelte";
 	import VolumeControls from "./controls/VolumeControls.svelte";
 	import ReactionMenu from "./reactions/ReactionMenu.svelte";
 	import ReactionOverlay from "./reactions/ReactionOverlay.svelte";
@@ -19,7 +20,8 @@
 		chatInput = null,
 		chatDraft = $bindable(""),
 		enableReactions = true,
-		controlsWidth = $bindable(0)
+		controlsWidth = $bindable(0),
+		theater = $bindable(false)
 	}: {
 		frame?: HTMLElement | null;
 		video?: HTMLVideoElement | null;
@@ -27,15 +29,19 @@
 		chatDraft?: string;
 		enableReactions?: boolean;
 		controlsWidth?: number;
+		theater?: boolean;
 	} = $props();
 
 	let menuOpen = $state(false);
 	let chatVisible = $state(true);
 	let fullscreenElement = $state<Element | null>(null);
-	let fullscreenChatInput = $state<HTMLInputElement | null>(null);
+	let overlayChatInput = $state<HTMLInputElement | null>(null);
 	let toggleButtonEl = $state<HTMLButtonElement | null>(null);
 	let activeReaction = $state<Reaction | null>(null);
 	let overlayTimer: ReturnType<typeof setTimeout> | undefined;
+
+	// Both modes cover the chat input below the frame, so the overlay one stands in.
+	const immersive = $derived(theater || (frame !== null && fullscreenElement === frame));
 
 	function toggleMenu() {
 		menuOpen = !menuOpen;
@@ -74,13 +80,12 @@
 			chatVisible = !chatVisible;
 			dispatchAutohide(frame, "autohide:show");
 		} else if (key === "c") {
-			const inFullscreen = frame !== null && fullscreenElement === frame;
-			if (!inFullscreen && !chatInput) return;
+			if (!immersive && !chatInput) return;
 			event.preventDefault();
 			closeMenu();
-			if (inFullscreen) chatVisible = true;
+			if (immersive) chatVisible = true;
 			await tick();
-			(inFullscreen ? fullscreenChatInput : chatInput)?.focus();
+			(immersive ? overlayChatInput : chatInput)?.focus();
 			dispatchAutohide(frame, "autohide:show");
 		}
 	}
@@ -105,12 +110,12 @@
 {#if enableReactions}
 	{#if chatVisible}
 		<ChatOverlay />
-		{#if frame && fullscreenElement === frame}
+		{#if immersive}
 			<div
 				class="absolute bottom-3 left-3 z-30 w-80 max-w-[calc(100%-1.5rem)] rounded-sm border border-border bg-background/55 px-3 py-2 backdrop-blur-md transition-[opacity,translate] duration-300 ease-out-expo data-[visible=false]:pointer-events-none data-[visible=false]:translate-y-2 data-[visible=false]:opacity-0 @max-[44rem]:bottom-18"
 				{@attach autohide()}
 			>
-				<ChatInput overlay bind:text={chatDraft} bind:ref={fullscreenChatInput} />
+				<ChatInput overlay bind:text={chatDraft} bind:ref={overlayChatInput} />
 			</div>
 		{/if}
 	{/if}
@@ -155,5 +160,6 @@
 	{/if}
 
 	<VolumeControls {video} disableGlobalInput={menuOpen} />
+	<TheaterToggle target={frame} bind:theater />
 	<FullscreenToggle target={frame ?? video} />
 </div>

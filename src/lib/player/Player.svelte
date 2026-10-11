@@ -23,6 +23,7 @@
 	let controlsWidth = $state(0);
 	let chatDraft = $state("");
 	let chatInput = $state<HTMLInputElement | null>(null);
+	let theater = $state(false);
 
 	const connection = $state({
 		state: "new" as RTCPeerConnectionState,
@@ -81,8 +82,13 @@
 	<div data-resize-surface class="relative cursor-default">
 		<div class="h-px frame-edge" aria-hidden="true"></div>
 
+		<!-- Theater pins the frame over the viewport. z-70 clears the page chrome inside
+		     main's stacking context (logout, Catchip) but leaves Neko free to roam. -->
 		<div
-			class="@container-size relative aspect-video bg-background ring-1 ring-accent/10 ring-inset"
+			class={[
+				"@container-size bg-background",
+				theater ? "fixed inset-0 z-70" : "relative aspect-video ring-1 ring-accent/10 ring-inset"
+			]}
 			bind:this={frameEl}
 		>
 			<!-- Keep demoSrc in SSR markup so the browser can fetch it before hydration.
@@ -110,6 +116,7 @@
 				enableReactions={enableFunFeatures}
 				bind:chatDraft
 				bind:controlsWidth
+				bind:theater
 				{chatInput}
 			/>
 		</div>
