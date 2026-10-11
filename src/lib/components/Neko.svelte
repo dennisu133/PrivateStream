@@ -670,6 +670,12 @@
 		animation: windup-shake 0.4s steps(1, end) infinite;
 	}
 
+	/* Theater mode belongs to the video, so she slips under the frame (z-70) until
+	   it ends. Unlayered, which is what outranks the z-9999 utility. */
+	:global(:root:has([data-theater])) button {
+		z-index: 60;
+	}
+
 	@media (prefers-reduced-motion: reduce) {
 		.windup-shake {
 			animation: none;

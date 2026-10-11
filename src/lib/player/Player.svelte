@@ -83,8 +83,9 @@
 		<div class="h-px frame-edge" aria-hidden="true"></div>
 
 		<!-- Theater pins the frame over the viewport. z-70 clears the page chrome inside
-		     main's stacking context (logout, Catchip) but leaves Neko free to roam. -->
+		     main's stacking context; Neko watches data-theater to drop below it too. -->
 		<div
+			data-theater={theater || undefined}
 			class={[
 				"@container-size bg-background",
 				theater ? "fixed inset-0 z-70" : "relative aspect-video ring-1 ring-accent/10 ring-inset"
