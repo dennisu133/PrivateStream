@@ -1,8 +1,8 @@
-import { error, json } from "@sveltejs/kit";
-import { env } from "$env/dynamic/private";
-import { clientKey, createFixedWindowRateLimiter } from "$lib/server/rate-limit";
-import { reactions } from "$lib/player/reactions/reactions";
-import { parseStreamEvent } from "$lib/events";
+import { error } from "@sveltejs/kit";
+import { REACTIONS } from "$app/env/private";
+import { clientKey, createFixedWindowRateLimiter } from "#lib/server/rate-limit.ts";
+import { reactions } from "#lib/player/reactions/reactions.ts";
+import { parseStreamEvent } from "#lib/events.ts";
 import type { RequestHandler } from "./$types";
 
 // Allow bursts without letting one viewer dominate the overlay.
@@ -47,7 +47,7 @@ function stopKeepAlive() {
 }
 
 function requireEventAccess(locals: App.Locals) {
-	if (env.REACTIONS === "false") {
+	if (REACTIONS === "false") {
 		throw error(404, "Events are disabled");
 	}
 
@@ -100,5 +100,5 @@ export const POST: RequestHandler = async ({ locals, request, getClientAddress, 
 
 	send(`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`);
 
-	return json({ success: true });
+	return Response.json({ success: true });
 };

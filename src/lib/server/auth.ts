@@ -1,10 +1,10 @@
-import { env } from "$env/dynamic/private";
-import { dev } from "$app/environment";
+import { SESSION_SECRET } from "$app/env/private";
+import { dev } from "$app/env";
 import {
 	createSignedSessionToken,
 	SESSION_TTL_SECONDS,
 	verifySignedSessionToken
-} from "$lib/server/session-token";
+} from "#lib/server/session-token.ts";
 
 export const SESSION_COOKIE_NAME = "session";
 export const SESSION_COOKIE_OPTIONS = {
@@ -16,7 +16,8 @@ export const SESSION_COOKIE_OPTIONS = {
 };
 
 function getSessionSecret(): Buffer | null {
-	const encodedSecret = env.SESSION_SECRET?.trim();
+	const encodedSecret = SESSION_SECRET?.trim();
+
 	if (!encodedSecret || !/^[A-Za-z0-9+/]+={0,2}$/.test(encodedSecret)) return null;
 
 	const secret = Buffer.from(encodedSecret, "base64");

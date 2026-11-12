@@ -1,11 +1,11 @@
 <script lang="ts">
 	import "./layout.css";
-	import favicon from "$lib/assets/favicon.ico";
+	import favicon from "#lib/assets/favicon.ico";
 	import fontBebasNeue from "$fonts/bebas-neue-400.woff2";
 	import fontGeistMono from "$fonts/geist-mono-300-500.woff2";
 	import fontGeistSans from "$fonts/geist-sans-600.woff2";
 
-	import { publicTitle } from "$lib/meta";
+	import { publicTitle } from "#lib/meta.ts";
 	import { page } from "$app/state";
 
 	let { children } = $props();

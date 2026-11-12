@@ -1,4 +1,4 @@
-import { env } from "$env/dynamic/private";
+import { REACTIONS } from "$app/env/private";
 import { redirect } from "@sveltejs/kit";
 import type { LayoutServerLoad } from "./$types";
 
@@ -7,5 +7,5 @@ export const load: LayoutServerLoad = ({ locals }) => {
 		redirect(303, "/login");
 	}
 
-	return { reactionsEnabled: env.REACTIONS !== "false" };
+	return { reactionsEnabled: REACTIONS !== "false" };
 };

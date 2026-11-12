@@ -7,7 +7,7 @@ export type Reaction = {
 };
 
 const reactionModules = import.meta.glob<{ default: string }>(
-	"$lib/assets/reactions/*.{png,jpg,jpeg,gif,webp,svg}",
+	"#lib/assets/reactions/*.{png,jpg,jpeg,gif,webp,svg}",
 	{ eager: true }
 );
 

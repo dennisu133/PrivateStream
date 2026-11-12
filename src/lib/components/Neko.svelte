@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 
-	import spriteSheet from "$lib/assets/neko/java.png";
+	import spriteSheet from "#lib/assets/neko/java.png";
 
 	const SHEET_COLS = 8;
 	const CELL_SIZE = 32;

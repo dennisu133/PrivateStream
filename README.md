@@ -8,7 +8,7 @@ It is a personal alternative to Discord streaming. The setup is more involved, b
 
 ## Requirements
 
-- [Bun](https://bun.com/)
+- [Bun](https://bun.com/) 1.4 or newer
 - [Docker](https://docs.docker.com/get-started/get-docker/)
 - [OBS Studio](https://obsproject.com/)
 - An HTTPS endpoint for production

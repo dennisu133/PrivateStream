@@ -1,10 +1,10 @@
-import { env } from "$env/dynamic/private";
+import { SRS_WHEP_URL } from "$app/env/private";
 import { createStreamStatus } from "./stream-status";
 
 // The SRS HTTP API lives on the same origin as the WHEP endpoint (port 1985).
 function srsUrl(): URL | null {
 	try {
-		return env.SRS_WHEP_URL ? new URL(env.SRS_WHEP_URL) : null;
+		return SRS_WHEP_URL ? new URL(SRS_WHEP_URL) : null;
 	} catch {
 		return null;
 	}

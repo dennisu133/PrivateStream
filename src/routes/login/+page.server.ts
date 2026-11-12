@@ -1,13 +1,13 @@
 import { fail, redirect } from "@sveltejs/kit";
-import { env } from "$env/dynamic/private";
+import { SITE_PASSWORD_HASH } from "$app/env/private";
 import bcrypt from "bcrypt";
 import {
 	createSessionToken,
 	hasValidSessionSecret,
 	SESSION_COOKIE_NAME,
 	SESSION_COOKIE_OPTIONS
-} from "$lib/server/auth";
-import { clientKey, LOGIN_ATTEMPT_LIMIT, loginRateLimiter } from "$lib/server/rate-limit";
+} from "#lib/server/auth.ts";
+import { clientKey, LOGIN_ATTEMPT_LIMIT, loginRateLimiter } from "#lib/server/rate-limit.ts";
 import type { Actions, PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -21,7 +21,7 @@ export const actions: Actions = {
 		const data = await request.formData();
 		const password = data.get("password")?.toString();
 
-		const passwordHashBase64 = env.SITE_PASSWORD_HASH;
+		const passwordHashBase64 = SITE_PASSWORD_HASH;
 
 		if (!passwordHashBase64 || !hasValidSessionSecret()) {
 			return fail(500, { error: "Server authentication is not configured correctly." });

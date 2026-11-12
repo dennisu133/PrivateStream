@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { FoldHorizontal, UnfoldHorizontal } from "@lucide/svelte";
 	import Button from "./Button.svelte";
-	import { dispatchAutohide } from "$lib/attachments/autohide";
+	import { dispatchAutohide } from "#lib/attachments/autohide.ts";
 
 	// Theater mode fills the browser viewport with CSS and leaves the browser UI alone,
 	// unlike the Fullscreen API. target is only the autohide monitor here.

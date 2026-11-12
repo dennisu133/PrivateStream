@@ -1,4 +1,4 @@
-import type { ReceivingState } from "$lib/types";
+import type { ReceivingState } from "#lib/types.ts";
 
 type WhepOptions = {
 	onStateChange?: (state: RTCPeerConnectionState) => void;

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import catchipGif from "$lib/assets/catchip.webp";
-	import { explode } from "$lib/effects/explosion";
+	import catchipGif from "#lib/assets/catchip.webp";
+	import { explode } from "#lib/effects/explosion.ts";
 
 	let isGifVisible = $state(true);
 	let detonating = false;

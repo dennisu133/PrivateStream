@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Maximize, Minimize } from "@lucide/svelte";
 	import Button from "./Button.svelte";
-	import { dispatchAutohide } from "$lib/attachments/autohide";
+	import { dispatchAutohide } from "#lib/attachments/autohide.ts";
 
 	let {
 		target = null

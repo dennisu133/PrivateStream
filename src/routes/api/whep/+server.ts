@@ -1,10 +1,9 @@
 import { error } from "@sveltejs/kit";
-import { env } from "$env/dynamic/private";
-import { createPublicIpResolver } from "$lib/server/public-ip";
-import { toProxySessionPath, toSrsSessionUrl } from "$lib/server/whep-session";
+import { SRS_WHEP_URL, IP_LOOKUP_URLS, SERVER_PUBLIC_IP } from "$app/env/private";
+import { createPublicIpResolver } from "#lib/server/public-ip.ts";
+import { toProxySessionPath, toSrsSessionUrl } from "#lib/server/whep-session.ts";
 import type { RequestHandler } from "./$types";
 
-const SRS_WHEP_URL = env.SRS_WHEP_URL;
 const FORWARD_TIMEOUT_MS = 10_000;
 // Leave plenty of room for SDP while rejecting oversized request bodies.
 const MAX_SDP_BYTES = 100_000;
@@ -15,12 +14,12 @@ const DEFAULT_IP_LOOKUP_URLS = [
 	"https://checkip.amazonaws.com"
 ];
 
-const configuredLookupUrls = env.IP_LOOKUP_URLS?.split(",")
+const configuredLookupUrls = IP_LOOKUP_URLS?.split(",")
 	.map((url) => url.trim())
 	.filter(Boolean);
 
 const ipResolver = createPublicIpResolver({
-	staticIp: env.SERVER_PUBLIC_IP?.trim() || undefined,
+	staticIp: SERVER_PUBLIC_IP?.trim() || undefined,
 	lookupUrls: configuredLookupUrls?.length ? configuredLookupUrls : DEFAULT_IP_LOOKUP_URLS,
 	log: (message) => console.warn("[WHEP]", message)
 });

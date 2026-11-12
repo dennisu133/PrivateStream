@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Check, Send } from "@lucide/svelte";
 	import { onDestroy } from "svelte";
-	import { MAX_CHAT_LENGTH } from "$lib/events";
+	import { MAX_CHAT_LENGTH } from "#lib/events.ts";
 	import { sendEvent } from "./events";
 
 	let {

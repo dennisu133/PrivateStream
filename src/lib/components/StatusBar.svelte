@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Eye } from "@lucide/svelte";
-	import type { IndicatorState, ReceivingState } from "$lib/types";
+	import type { IndicatorState, ReceivingState } from "#lib/types.ts";
 
 	type Indicator = { state: IndicatorState; label: string };
 

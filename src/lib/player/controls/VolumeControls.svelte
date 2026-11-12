@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { browser } from "$app/environment";
+	import { browser } from "$app/env";
 	import { Volume, Volume1, Volume2, VolumeX } from "@lucide/svelte";
 	import Button from "./Button.svelte";
-	import { dispatchAutohide } from "$lib/attachments/autohide";
+	import { dispatchAutohide } from "#lib/attachments/autohide.ts";
 
 	const STEP = 0.05;
 	const SCROLL_STEP = 0.02;
@@ -24,12 +24,12 @@
 
 	const volumePercent = $derived(Math.round(volume * 100));
 	const volumeText = $derived(isMuted ? "Muted" : `${volumePercent}%`);
+
 	const VolumeIcon = $derived(
 		isMuted ? VolumeX : volume < 0.33 ? Volume : volume < 0.66 ? Volume1 : Volume2
 	);
 
 	const dispatchShow = () => dispatchAutohide(containerEl, "autohide:show");
-
 	const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
 	// Browsers refuse a programmatic unmute until the document has been activated, and

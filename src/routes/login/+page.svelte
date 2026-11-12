@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { enhance } from "$app/forms";
 	import type { ActionData } from "./$types";
-	import FrameBrackets from "$lib/components/FrameBrackets.svelte";
-	import { publicTitle } from "$lib/meta";
+	import FrameBrackets from "#lib/components/FrameBrackets.svelte";
+	import { publicTitle } from "#lib/meta.ts";
 
 	let { form }: { form: ActionData } = $props();
 </script>

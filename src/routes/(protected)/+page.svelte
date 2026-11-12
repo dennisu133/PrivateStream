@@ -1,9 +1,9 @@
 <script lang="ts">
 	import Catchip from "virtual:catchip-widget";
-	import Player from "$lib/player/Player.svelte";
+	import Player from "#lib/player/Player.svelte";
 	import Neko from "virtual:neko-widget";
 	import type { PageData } from "./$types";
-	import { privateTitle } from "$lib/meta";
+	import { privateTitle } from "#lib/meta.ts";
 
 	let { data }: { data: PageData } = $props();
 	const boring = import.meta.env.MODE === "boring";

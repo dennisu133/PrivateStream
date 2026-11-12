@@ -3,11 +3,11 @@
 	import ChatInput from "./ChatInput.svelte";
 	import PlayerControls from "./PlayerControls.svelte";
 	import { startWhep } from "./actions/whep";
-	import { resizable } from "$lib/attachments/resizable";
-	import FrameBrackets from "$lib/components/FrameBrackets.svelte";
-	import StatusBar from "$lib/components/StatusBar.svelte";
-	import type { ReceivingState } from "$lib/types";
-	import poster from "$lib/assets/poster.webp";
+	import { resizable } from "#lib/attachments/resizable.ts";
+	import FrameBrackets from "#lib/components/FrameBrackets.svelte";
+	import StatusBar from "#lib/components/StatusBar.svelte";
+	import type { ReceivingState } from "#lib/types.ts";
+	import poster from "#lib/assets/poster.webp";
 
 	// demoSrc switches the player from WHEP to a looping local video.
 	let {

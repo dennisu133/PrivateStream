@@ -1,8 +1,8 @@
 <script lang="ts">
 	import Catchip from "virtual:catchip-widget";
-	import Player from "$lib/player/Player.svelte";
+	import Player from "#lib/player/Player.svelte";
 	import Neko from "virtual:neko-widget";
-	import { publicTitle } from "$lib/meta";
+	import { publicTitle } from "#lib/meta.ts";
 </script>
 
 <svelte:head>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, tick } from "svelte";
 	import { MessageSquareOff, MessageSquareText, SmilePlus } from "@lucide/svelte";
-	import { autohide, dispatchAutohide } from "$lib/attachments/autohide";
+	import { autohide, dispatchAutohide } from "#lib/attachments/autohide.ts";
 	import Button from "./controls/Button.svelte";
 	import FullscreenToggle from "./controls/FullscreenToggle.svelte";
 	import TheaterToggle from "./controls/TheaterToggle.svelte";

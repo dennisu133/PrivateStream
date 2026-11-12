@@ -1,4 +1,4 @@
-import { parseStreamEvent, type StreamEvent } from "$lib/events";
+import { parseStreamEvent, type StreamEvent } from "#lib/events.ts";
 
 export async function sendEvent(event: StreamEvent): Promise<void> {
 	const response = await fetch("/api/events", {
