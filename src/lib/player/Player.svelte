@@ -9,14 +9,7 @@
 	import type { ReceivingState } from "#lib/types.ts";
 	import poster from "#lib/assets/poster.webp";
 
-	// demoSrc switches the player from WHEP to a looping local video.
-	let {
-		enableFunFeatures = true,
-		demoSrc = null
-	}: {
-		enableFunFeatures?: boolean;
-		demoSrc?: string | null;
-	} = $props();
+	let { enableFunFeatures = true }: { enableFunFeatures?: boolean } = $props();
 
 	let frameEl = $state<HTMLDivElement | null>(null);
 	let videoEl = $state<HTMLVideoElement | null>(null);
@@ -34,21 +27,7 @@
 
 	onMount(() => {
 		if (!videoEl) return;
-		const video = videoEl;
-
-		if (demoSrc) {
-			const handlePlaying = () => {
-				connection.state = "connected";
-				connection.stream = "live";
-			};
-			video.addEventListener("playing", handlePlaying);
-
-			return () => {
-				video.removeEventListener("playing", handlePlaying);
-			};
-		}
-
-		const controller = startWhep(video, {
+		const controller = startWhep(videoEl, {
 			onStateChange: (state) => (connection.state = state),
 			onReceivingChange: (state) => (connection.stream = state)
 		});
@@ -60,10 +39,8 @@
 </script>
 
 <svelte:head>
-	{#if !demoSrc}
-		<!-- The poster is the LCP image, and the video poster attribute cannot set fetchpriority. -->
-		<link rel="preload" as="image" href={poster} fetchpriority="high" />
-	{/if}
+	<!-- The poster is the LCP image, and the video poster attribute cannot set fetchpriority. -->
+	<link rel="preload" as="image" href={poster} fetchpriority="high" />
 </svelte:head>
 
 <!-- Width is 72vw, capped so the 16:9 frame plus its chrome still fits in 82vh, and
@@ -92,17 +69,14 @@
 			]}
 			bind:this={frameEl}
 		>
-			<!-- Keep demoSrc in SSR markup so the browser can fetch it before hydration.
-			     tabindex="-1" because Firefox tabs to a controls-less video: every hotkey is
+			<!-- tabindex="-1" because Firefox tabs to a controls-less video: every hotkey is
 			     bound on window, so the stop does nothing but sit in front of the controls. -->
 			<video
 				bind:this={videoEl}
 				aria-label="Video stream"
 				aria-busy={!isLive}
 				tabindex="-1"
-				poster={demoSrc ? undefined : poster}
-				src={demoSrc ?? undefined}
-				loop={Boolean(demoSrc)}
+				{poster}
 				autoplay
 				muted
 				playsinline
@@ -129,8 +103,8 @@
 
 	<div class="@container cursor-default">
 		<div class="mt-5 flex flex-col gap-3 @2xl:flex-row @2xl:items-start @2xl:justify-between">
-			<StatusBar {connection} demo={Boolean(demoSrc)} />
-			{#if enableFunFeatures && !demoSrc}
+			<StatusBar {connection} />
+			{#if enableFunFeatures}
 				<ChatInput bind:text={chatDraft} bind:ref={chatInput} />
 			{/if}
 		</div>

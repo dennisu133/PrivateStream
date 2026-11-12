@@ -4,19 +4,15 @@
 
 	type Indicator = { state: IndicatorState; label: string };
 
-	// demo: a looping local file, so connection and stream state say nothing useful.
 	let {
-		demo = false,
 		connection
 	}: {
-		demo?: boolean;
 		connection: { state: RTCPeerConnectionState; stream: ReceivingState };
 	} = $props();
 
 	let viewers = $state<number | null>(null);
 
 	$effect(() => {
-		if (demo) return;
 		let stopped = false;
 		let timer: ReturnType<typeof setTimeout>;
 		const controller = new AbortController();
@@ -110,19 +106,17 @@
 
 <div class="flex shrink-0 flex-wrap items-baseline gap-4 px-1">
 	<div class="flex flex-wrap items-baseline gap-4" role="status">
-		{#if demo}
-			{@render indicator({ state: "ok", label: "Demo" })}
-		{:else if connection.stream === "offline"}
+		{#if connection.stream === "offline"}
 			<!-- No connection indicator: there is nothing to connect to while offline. -->
 			{@render indicator(streamIndicator)}
 		{:else}
 			{@render indicator(connectionIndicator)}
 		{/if}
-		{#if !demo && connection.stream !== "offline" && connectionIndicator.state === "ok"}
+		{#if connection.stream !== "offline" && connectionIndicator.state === "ok"}
 			{@render indicator(streamIndicator)}
 		{/if}
 	</div>
-	{#if !demo && connection.stream === "live"}
+	{#if connection.stream === "live"}
 		<span
 			class="inline-flex items-baseline gap-2 text-xs leading-none font-light tracking-widest text-muted uppercase"
 			title="Active playback connections, including the plain player"
